@@ -2,6 +2,7 @@
 # 输出 dist/ClaudeChan/ClaudeChan.exe（目录形式：启动快，开机自启的路径固定）。
 import json
 import shutil
+import sys
 from pathlib import Path
 
 # 重新打包会清空 dist/ClaudeChan/：先把里面的 data（设置、窗口位置、日志）挪开，打包完再放回去
@@ -34,6 +35,16 @@ a = Analysis(
     excludes=["tkinter", "numpy", "av", "PyInstaller"],
 )
 a.binaries = [b for b in a.binaries if not any(name in Path(b[0]).name for name in UNUSED)]
+
+# OpenSSL 一定用 Python 自带的那份：在 Git Bash 里打包时，PATH 上 Git 的 mingw64\bin 也有同名的 libssl / libcrypto，
+# PyInstaller 会挑中它们，Python 的 _ssl 加载不了，检查更新就连不上 https
+_PY_DLLS = Path(sys.base_prefix) / "DLLs"
+_OPENSSL = {"libssl-3-x64.dll", "libcrypto-3-x64.dll"}
+a.binaries = [
+    (dest, str(_PY_DLLS / Path(dest).name), kind) if Path(dest).name.lower() in _OPENSSL and (_PY_DLLS / Path(dest).name).exists()
+    else (dest, src, kind)
+    for dest, src, kind in a.binaries
+]
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="ClaudeChan", icon="resources/icon.png", console=False)
 coll = COLLECT(exe, a.binaries, a.datas, name="ClaudeChan")
