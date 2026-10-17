@@ -42,6 +42,26 @@ Claude Code 在思考、读代码、写代码、等你确认、做完了、出�
 
 目前只在 **Windows 10 / 11** 上测试过。需要已经装好 [Claude Code](https://code.claude.com/docs)（命令行或桌面版都可以）。
 
+### 让 Claude 帮你装
+
+懒得自己动手的话，把下面这段话发给 Claude Code（或别的能运行命令的 AI 助手），它会替你完成下面的第 1、2 步：
+
+```text
+帮我安装 Claude-Chan 桌宠（https://github.com/Ivanfangsc/claude-chan），我用的是 Windows：
+1. 从 https://github.com/Ivanfangsc/claude-chan/releases/latest 下载最新的 ClaudeChan-*-windows.zip，用发布说明里的 SHA256 校验。
+2. 解压到 %USERPROFILE%\Apps\ClaudeChan（得到 ...\Apps\ClaudeChan\ClaudeChan.exe；不要放进 Program Files）。
+3. 用 PowerShell 的 Start-Process 启动 ClaudeChan.exe，让它独立于当前终端运行（直接在终端里启动的话，会话结束时它会跟着退出）。
+   等几秒，确认 http://127.0.0.1:47800/health 返回 {"ok":true}。
+4. 安装 Claude Code 插件：
+   claude plugin marketplace add Ivanfangsc/claude-chan
+   claude plugin install claude-chan@claude-chan
+   然后用 claude plugin list 确认 claude-chan@claude-chan 是 enabled。
+5. 如果我也在 WSL 里用 Claude Code，提醒我 README 里“WSL 里使用”那一节的设置。
+最后告诉我：右键桌宠，勾选“开机自启”。
+```
+
+想自己装的话，按下面三步来。
+
 ### 1. 运行桌宠
 
 1. 到 [Releases](https://github.com/Ivanfangsc/claude-chan/releases/latest) 下载最新的 `ClaudeChan-<版本>-windows.zip`。
