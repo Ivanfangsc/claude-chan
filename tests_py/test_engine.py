@@ -85,6 +85,7 @@ class FakePlayer:
         self.played: list[str] = []
         self.crossfades: list[str] = []
         self.rate = 1.0
+        self.ramps: list[tuple[float, int | None]] = []
 
     def set_next(self, c: Clip | None) -> None:
         self.next = c
@@ -98,6 +99,10 @@ class FakePlayer:
 
     def set_rate(self, r: float) -> None:
         self.rate = r
+
+    def ramp_rate(self, r: float, frames: int | None) -> None:
+        self.ramps.append((r, frames))
+        self.rate = r  # 只记录终点
 
     def finish(self) -> None:
         if self.next:
@@ -120,7 +125,13 @@ class FakePlayer:
 
 class Rig:
     def __init__(self, manifest: Manifest = BASE, random=None, **overrides) -> None:
-        cfg = {**copy.deepcopy(DEFAULT_CONFIG["animation"]), "interruptibleLoops": [], "loopRateJitter": 0, **overrides}
+        cfg = {
+            **copy.deepcopy(DEFAULT_CONFIG["animation"]),
+            "interruptibleLoops": [],
+            "loopRateJitter": 0,
+            "transitionPlaybackRate": 1,
+            **overrides,
+        }
         self.clock = FakeScheduler()
         self.player = FakePlayer()
         self.acks: list[int] = []
@@ -364,6 +375,38 @@ def test_event_chance_per_clip() -> None:
     never = dataclasses.replace(BASE, clips=[*BASE.clips, Clip("idle-blink", "event", "b.avif", "idle", chance=0.0)])
     r = Rig(never, random=lambda: 0.0, eventChance=1.0)
     assert set(r.run(10)) == {"idle-loop"}  # 事件自己的概率优先于配置
+
+
+def test_ramps_into_transitions_and_back() -> None:
+    """离开 loop：这一轮照常播完但逐渐加速到过渡速度；过渡用过渡速度；到了目标 loop 再慢慢减回来。"""
+    r = Rig(crossfadeMs=0, transitionPlaybackRate=2, rampInFrames=60, rampUpFrames=12)
+    assert r.player.playing.id == "idle-loop"
+    r.engine.set_target(t("thinking"))
+    assert r.player.playing.id == "idle-loop"  # 不打断
+    assert r.player.ramps[-1] == (2, None)  # 加速到这一轮末尾
+    assert r.run(1) == ["thinking-intro"]
+    assert r.player.rate == 2
+    assert r.run(1) == ["thinking-loop"]
+    assert r.player.ramps[-1] == (1, 60)  # 慢慢减回正常速度
+    assert r.player.rate == 1
+
+
+def test_ramp_cancelled_when_target_comes_back() -> None:
+    r = Rig(crossfadeMs=0, transitionPlaybackRate=2, rampUpFrames=12)
+    r.engine.set_target(t("thinking"))
+    assert r.player.ramps[-1] == (2, None)
+    r.engine.set_target(t("idle"))
+    assert r.player.ramps[-1] == (1, 12)
+    assert r.run(1) == ["idle-loop"]
+    assert r.player.rate == 1
+
+
+def test_crossfade_into_transition_ramps_up() -> None:
+    """交叉淡化直接切进过渡（比如目标是 confirmation）：几帧内从正常速度加到过渡速度，不是一下子跳上去。"""
+    r = Rig(transitionPlaybackRate=2, rampUpFrames=12)
+    r.engine.set_target(t("confirmation"))
+    assert r.player.crossfades == ["confirmation-intro"]
+    assert r.player.ramps[-1] == (2, 12)
 
 
 def test_loop_rate_jitter() -> None:

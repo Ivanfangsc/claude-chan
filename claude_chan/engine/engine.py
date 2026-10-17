@@ -23,6 +23,7 @@ from .graph import Graph
 from .manifest import Clip
 
 REST = ("loop", "event")  # 停留在状态上时播放的片段类型，彼此切换不算离开状态
+TRANSIT = ("intro", "outro", "transition")  # 在状态之间移动的片段类型
 
 
 class PlayerLike(Protocol):
@@ -36,7 +37,11 @@ class PlayerLike(Protocol):
     def crossfade_to(self, clip: Clip) -> None:
         """立即交叉淡化到该片段。"""
 
-    def set_rate(self, rate: float) -> None: ...
+    def set_rate(self, rate: float) -> None:
+        """立即改成这个速度（取消正在进行的渐变）。"""
+
+    def ramp_rate(self, rate: float, frames: int | None) -> None:
+        """在接下来 frames 帧内平滑地变到这个速度；None 表示到当前这段的最后一帧正好达到。"""
 
 
 class Engine:
@@ -76,6 +81,7 @@ class Engine:
         self._state_since = clock.now()
         self._last_event_id: str | None = None
         self._jitter = 1.0
+        self._ramping_out = False  # 正在为离开当前 loop 加速
         player.on_clip_start = self._handle_clip_start
         player.on_stall = self._handle_stall
 
@@ -134,6 +140,7 @@ class Engine:
     # ---------- 播放器回调 ----------
 
     def _handle_clip_start(self, clip: Clip) -> None:
+        prev = self._current
         self._current = clip
         self._node = self._graph.end_node(clip)
         if clip.type not in ("loop", "event"):
@@ -148,6 +155,14 @@ class Engine:
         self._jitter = 1 + jitter * (2 * self._random() - 1) if clip.type == "loop" and jitter else 1.0
         self._crossfading = False
         self._hold_done = not self._graph.is_oneshot(self._node)
+        # 速度：过渡用过渡速度（交叉淡化直接切进来时渐快几帧）；刚从过渡进到 loop 时慢慢减回正常速度
+        self._ramping_out = False
+        if clip.type in TRANSIT:
+            self._set_rate(self._rate_for(clip), self._cfg.get("rampUpFrames", 0))
+        elif prev is not None and prev.type in TRANSIT:
+            self._set_rate(self._rate_for(clip), self._cfg.get("rampInFrames", 0))
+        else:
+            self._set_rate(self._rate_for(clip), 0)
         self._replan()
 
     def _handle_stall(self) -> None:
@@ -237,6 +252,7 @@ class Engine:
         t = self._target.state
         high = t in self._cfg["highPriority"]
         nxt: Clip | None = None
+        ramp_out = False
 
         if self._current:
             nxt = self._plan(self._node)
@@ -256,10 +272,11 @@ class Engine:
             if leaving and urgent and self._cfg["crossfadeMs"] > 0 and nxt is not None:
                 self._crossfading = True
                 self._next = nxt
-                self._apply_rate(high)
                 self._player.crossfade_to(nxt)
                 self._emit()
                 return
+            # 不急着离开：这一轮照常播完，但从现在起逐渐加速，到末尾正好达到过渡速度，和接下来的过渡接上
+            ramp_out = leaving and nxt is not None and nxt.type in TRANSIT
         elif not self._holding:
             nxt = self._plan(self._node)
             # 停在一次性状态上时又来了同一状态的新目标：它已经在屏幕上了，直接确认
@@ -274,16 +291,34 @@ class Engine:
         if (nxt.id if nxt else None) != (self._next.id if self._next else None):
             self._next = nxt
             self._player.set_next(nxt)
-        self._apply_rate(high)
+        if ramp_out and not self._ramping_out:
+            self._ramping_out = True
+            self._set_rate(self._rate_for(nxt), None)
+        elif not ramp_out and self._ramping_out:
+            # 目标又变回来了，不走了：几帧内减回这一段本来的速度
+            self._ramping_out = False
+            self._set_rate(self._rate_for(self._current), self._cfg.get("rampUpFrames", 0))
         self._emit()
 
-    def _apply_rate(self, high: bool) -> None:
+    def _rate_for(self, clip: Clip | None) -> float:
+        """这段片段正常该用的速度：基础速度 ×（追赶高优先级目标时的加速）×（过渡速度，或 loop 每轮的随机浮动）。"""
+        high = self._target.state in self._cfg["highPriority"]
         boost = self._cfg["boostPlaybackRate"] if high and not self._at_target() else 1
-        jitter = self._jitter if self._current and self._current.type == "loop" else 1.0
-        rate = self._cfg["basePlaybackRate"] * boost * jitter
-        if rate != self._rate:
-            self._rate = rate
-            self._player.set_rate(rate)
+        rate = self._cfg["basePlaybackRate"] * boost
+        if clip is not None and clip.type in TRANSIT:
+            return rate * self._cfg.get("transitionPlaybackRate", 1)
+        if clip is not None and clip.type == "loop":
+            return rate * self._jitter
+        return rate
+
+    def _set_rate(self, rate: float, frames: int | None) -> None:
+        """frames 为 0 时立即生效；否则交给播放器在这么多帧内渐变（None：到当前这段末尾）。"""
+        if frames == 0:
+            if rate != self._rate:
+                self._player.set_rate(rate)
+        else:
+            self._player.ramp_rate(rate, frames)
+        self._rate = rate
 
     def _emit(self) -> None:
         self._on_status(self.status())

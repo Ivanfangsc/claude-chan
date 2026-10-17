@@ -117,7 +117,8 @@ confirmation > error > 工作中（writing / reading / thinking）> complete > i
 
 - 枢纽 A（坐着，书合上）就是 idle；枢纽 B（书摊开）只是过渡姿势。thinking、confirmation、complete、error、drowsy 挂在 A 上，reading、writing 挂在 B 上。
 - 切换状态时在枢纽图上找最短路径，按顺序播放沿途片段。例如 thinking → writing 依次播 thinking 退出、A→B、writing 进入、writing 循环。
-- intro、outro、过渡一旦开始必须播完；loop 播完这一轮再离开。以下几种情况会用约 150ms 的交叉淡化立即离开：目标是 confirmation 或 error；当前是 idle 或 drowsy 的 loop（一有动静就“回过神来”）；当前在播随机事件。
+- intro、outro、过渡一旦开始必须播完；loop 播完这一轮再离开。以下几种情况会用约 150ms 的交叉淡化立即离开：目标是 confirmation 或 error；当前在播随机事件（以及 `interruptibleLoops` 里列出的状态，默认没有）。
+- **变速**：过渡（intro、outro、枢纽之间）以 2 倍速播放。不急着离开的 loop 这一轮照常播完，但从收到事件起逐渐加速，到这一轮最后一帧正好达到 2 倍速，和过渡接上；到了目标状态的 loop，再用 60 帧慢慢减回正常速度。交叉淡化直接切进过渡时，用 12 帧从正常速度加到 2 倍速。速度都按帧渐变（两头平缓），不会一下子跳变。
 - **loop 变体**：一个状态可以有多段 loop（`idle-loop`、`idle-loop-2`……），每轮随机换一段，不连续重复同一段。
 - **随机事件**：停在某个状态时，每播完一轮 loop，以 25% 的概率改播一段该状态的事件（比如 idle 打哈欠、张望，thinking 敲下巴，drowsy 惊醒），两次事件之间至少隔 60 秒。事件和 loop 一样首尾是该状态的关键帧，播完自然回到 loop。
 - 衔接无缝：逐帧解码 AVIF 画到窗口上，换片段只是换一个帧序列，下一段在当前段播完前就准备好了，不会出现空帧或闪烁。每段末帧等于下一段首帧，所以下一段从第 2 帧开始播，避免同一画面停两帧。
@@ -239,10 +240,13 @@ D:/comfy/.venv/Scripts/python.exe scripts/export_frames.py   # webm → AVIF，�
 | `updates.repo` | `"Ivanfangsc/claude-chan"` | 检查更新用的仓库 |
 | `assetsDir` | `null` | 外部素材目录（包含 `manifest.json`），`null` 为内置素材 |
 | `animation.highPriority` | `["confirmation", "error"]` | 以这些状态为目标时，立即交叉淡化离开当前 loop |
-| `animation.interruptibleLoops` | `["idle", "drowsy"]` | 离开这些状态的 loop 时不等这一轮播完 |
+| `animation.interruptibleLoops` | `[]` | 离开这些状态的 loop 时不等这一轮播完，直接交叉淡化（不加速） |
 | `animation.crossfadeMs` | `150` | 交叉淡化时长；`0` 表示不打断 loop，总是等这一轮播完 |
 | `animation.boostPlaybackRate` | `1` | 追赶高优先级目标时的播放速度，例如 `2`；`1` 为关闭 |
 | `animation.basePlaybackRate` | `1` | 所有片段的基础速度（调试面板的速度滑块改的就是它） |
+| `animation.transitionPlaybackRate` | `2` | 过渡的播放速度；离开 loop 时逐渐加速到它，`1` 为不加速 |
+| `animation.rampInFrames` | `60` | 到了目标状态的 loop，用这么多帧从过渡速度减回正常速度 |
+| `animation.rampUpFrames` | `12` | 交叉淡化直接切进过渡时，用这么多帧从正常速度加到过渡速度 |
 | `animation.oneshotHoldMs` | `1000` | error 在关键帧上停留的时长 |
 | `animation.skipSharedFrame` | `true` | 衔接时跳过下一段的首帧（与上一段末帧相同），避免同一画面停两帧 |
 | `animation.eventChance` | `0.25` | 每播完一轮 loop 改播随机事件的概率（manifest 里事件自己写了 `chance` 时以它为准）；`0` 关闭 |
