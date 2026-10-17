@@ -161,13 +161,13 @@ claude plugin marketplace remove claude-chan
 
 ## 致谢
 
-- **人设**：B 站 UP 主 [ZipZipPipe](https://www.bilibili.com/opus/1233069202138464289) 的《所有的AI们，和OpenCode》。Claude-Chan 是在这份人设的基础上二次创作的，角色设计的权利归原作者所有。
+- **人设**：B 站 UP 主 [ZipZipPipe](https://www.bilibili.com/opus/1233069202138464289) 的《所有的AI们，和OpenCode》（原作者以 CC BY-NC-SA 4.0 授权）。Claude-Chan 是在这份人设的基础上二次创作的。
 - **模型**：[Qwen Image 2.1](https://huggingface.co/Qwen/Qwen-Image-2.1)（关键帧编辑），[MiniMax H3](https://huggingface.co/MiniMaxAI/MiniMax-H3)（动画生成），运行在 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 上。
 - **参考**：[dsh-pet](https://github.com/PC2005-cloud/dsh-pet)（“道具从无到有再到无”的写法），[GPT-Niang](https://github.com/T7moris/GPT-Niang)（跟随主窗口的做法）。
 
 ## 许可
 
 - **代码和文档**：[MIT](LICENSE)。
-- **角色素材**（关键帧、动画、图标）：本项目自己做的部分以 [CC BY 4.0](ASSETS-LICENSE.md) 授权；原人设的权利归 ZipZipPipe，详见 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。
+- **角色素材**（关键帧、动画、图标、README 里的图）：按原人设作者的要求，以 [CC BY-NC-SA 4.0](ASSETS-LICENSE.md) 授权：署名（原作者 ZipZipPipe 和本项目）、非商业使用、二创同协议。详见 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)。
 - 素材全部由 AI 生成，再经人工挑选和后期处理。
 - “Claude” 是 Anthropic, PBC 的商标。本项目是**非官方的同人作品**，与 Anthropic 没有关联，也未经其认可。

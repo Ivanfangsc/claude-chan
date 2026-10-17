@@ -23,5 +23,6 @@ SOFTWARE.
 ---
 
 This license covers the source code and documentation. The character art,
-keyframes and animations under resources/ are licensed separately under
-CC BY 4.0; see ASSETS-LICENSE.md.
+keyframes and animations (resources/, docs/images/) are derivative works of
+ZipZipPipe's character design and are licensed separately under
+CC BY-NC-SA 4.0; see ASSETS-LICENSE.md.
