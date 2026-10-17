@@ -88,8 +88,6 @@ class FramePlayer(QObject):
         self._last_tick = 0.0
         self._last_hitch_log = 0.0
         self._paused = False
-        # 速度渐变：(起始速度, 目标速度, 总帧数, 已走帧数)
-        self._ramp: tuple[float, float, int, int] | None = None
 
     # ---------- 引擎接口 ----------
 
@@ -116,32 +114,9 @@ class FramePlayer(QObject):
         self.on_clip_start(clip)
 
     def set_rate(self, rate: float) -> None:
-        self._ramp = None
-        self._apply_rate(rate)
-
-    def ramp_rate(self, rate: float, frames: int | None) -> None:
-        if frames is None:
-            cur = self._current
-            frames = cur.count - 1 - cur.index if cur else 0
-        if frames <= 0 or abs(rate - self._rate) < 1e-6:
-            self.set_rate(rate)
-            return
-        self._ramp = (self._rate, rate, frames, 0)
-
-    def _apply_rate(self, rate: float) -> None:
         self._rate = rate
         if self._timer.isActive():
             self._timer.setInterval(self._interval())
-
-    def _advance_ramp(self) -> None:
-        """每显示一帧推进一次速度渐变（两头平缓的 smoothstep）。"""
-        if not self._ramp:
-            return
-        start, target, total, done = self._ramp
-        done += 1
-        p = min(1.0, done / total)
-        self._apply_rate(start + (target - start) * p * p * (3 - 2 * p))
-        self._ramp = None if done >= total else (start, target, total, done)
 
     def set_config(self, cfg: dict) -> None:
         self._cfg = cfg
@@ -204,7 +179,6 @@ class FramePlayer(QObject):
         self._ensure_running()
         self.frame_changed.emit()
         self.on_clip_start(track.clip)
-        self._advance_ramp()
 
     def _tick(self) -> None:
         with measure("tick"):
@@ -229,7 +203,6 @@ class FramePlayer(QObject):
             return
         if not cur.at_end():
             cur.step()
-            self._advance_ramp()
             self.frame_changed.emit()
         elif self._next:
             self._switch()

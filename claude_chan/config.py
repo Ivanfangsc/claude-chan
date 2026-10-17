@@ -33,19 +33,13 @@ DEFAULT_CONFIG: dict[str, Any] = {
         # 以这些状态为目标时，立即交叉淡化离开当前 loop
         "highPriority": ["confirmation", "error"],
         # 离开这些状态的 loop 时不等这一轮播完
-        "interruptibleLoops": [],
+        "interruptibleLoops": ["idle", "drowsy"],
         # 交叉淡化时长；0 表示不打断 loop
         "crossfadeMs": 150,
         # 追赶高优先级目标时的播放速度，1 表示关闭
         "boostPlaybackRate": 1,
         # 所有片段的基础速度（调试面板的速度滑块改的就是它）
         "basePlaybackRate": 1,
-        # 过渡（进场、退场、枢纽之间）的播放速度。离开 loop 时，从收到事件起逐渐加速，到这一轮末尾正好达到它；
-        # 到了目标状态的 loop 再用 rampInFrames 帧慢慢减回正常速度
-        "transitionPlaybackRate": 2,
-        "rampInFrames": 60,
-        # 交叉淡化直接切进过渡时（目标是 confirmation / error，或正在播随机事件），用这么多帧从正常速度加到过渡速度
-        "rampUpFrames": 12,
         # error 在关键帧上停留的时长
         "oneshotHoldMs": 1000,
         # 衔接时跳过下一段的首帧（与上一段末帧相同），避免同一画面停两帧
