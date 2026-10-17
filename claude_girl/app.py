@@ -23,7 +23,7 @@ from .config import config_path, data_dir, load_config
 from .debug import DebugActions, DebugWindow
 from .engine.engine import Engine
 from .engine.graph import Graph
-from .engine.manifest import Clip, Manifest, validate_manifest
+from .engine.manifest import Manifest, validate_manifest
 from . import profile
 from .engine.player import FramePlayer
 from .follower import Follower
@@ -93,9 +93,6 @@ class PetApp:
         self.skin = saved if saved in self.available_skins() else "adult"
         self.assets, self.manifest = self._load_skin(self.skin)
         self._grids: dict[str, list[list[bool]] | None] = {}  # 各形象的点击区域，启动时算好，切换时不卡
-        self._switching: str | None = None  # 正在切换到的形象
-        self._switch_ready = False
-        self._morph: Clip | None = None
 
         seq = itertools.count(1)
         next_seq = lambda: next(seq)  # noqa: E731
@@ -124,7 +121,7 @@ class PetApp:
             open_config_folder=lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(config_path().parent))),
             quit_app=self.quit,
             skins=[(name, SKINS[name][0]) for name in self.available_skins()],
-            current_skin=lambda: self._switching or self.skin,
+            current_skin=lambda: self.skin,
             switch_skin=self.switch_skin,
             follow=(lambda: self.follower.enabled, self.follower.set_enabled) if self.follower.available else None,
         )
@@ -208,63 +205,23 @@ class PetApp:
             self.log(f"保存形象选择失败：{e}")
 
     def switch_skin(self, name: str) -> None:
-        """切换形象：先回到 idle，这一轮播完后播变身动画（没有就直接切），变身一开始就换成新形象的引擎。
-        切换期间照常接收事件，只是先不交给引擎，切完用最新的目标。"""
-        if name == self.skin or self._switching or name not in self.available_skins():
+        """切换形象：立即换成新形象的素材和引擎，交叉淡化到新形象的 idle loop，再照常走向当前的目标状态。
+        （以前先回到 idle、等这一轮播完再播变身动画，点一下要等十几秒，去掉了。）"""
+        if name == self.skin or name not in self.available_skins():
             return
         self.log(f"切换形象：{SKINS[self.skin][0]} → {SKINS[name][0]}")
-        self._switching = name
-        self._switch_ready = False
-        self.engine.set_target(DisplayTarget("idle", self._next_seq()))
-        if self.engine_status:
-            self._on_engine_status(self.engine_status)
-
-    def _begin_switch(self) -> None:
-        """已经停在 idle：把播放器从旧引擎上摘下来，排上变身动画。"""
-        name = self._switching
-        assert name
-        self._switch_ready = True
         self.engine.dispose()
-        self.player.on_clip_start = self._on_switch_clip
-        self.player.on_stall = lambda: None
-        morph = self.manifest.switch.get(name)
-        if morph and (self.assets / morph).exists():
-            # 变身期间两种形象都会出现，点击区域取两者的并集
-            a, b = self._grid(self.skin), self._grid(name)
-            if a and b:
-                self.window.set_skin(None, [[x or y for x, y in zip(ra, rb)] for ra, rb in zip(a, b)])
-            self._morph = Clip(f"switch-to-{name}", "transition", str(self.assets / morph))
-            self.player.set_next(self._morph)  # 当前这一轮播完就变身
-            if not self.player.has_next and self.player.frames()[0] is not None:
-                self._morph = None  # 变身动画打不开（已记日志），直接切换
-                self._finish_switch()
-        else:
-            self._finish_switch()
-
-    def _on_switch_clip(self, clip: Clip) -> None:
-        if clip is self._morph:
-            self._finish_switch()
-
-    def _finish_switch(self) -> None:
-        """换成新形象的素材和引擎。变身动画正在播时，新引擎排好的 idle loop 会在它播完后接上。"""
-        name = self._switching
-        assert name
-        morph = self._morph
         self.assets, self.manifest = self._load_skin(name)
         self.skin = name
-        self._switching = None
-        self._morph = None
         self._save_app_state()
         self.player.set_assets(self.assets)
-        placeholder = self._placeholder(self.assets, self.manifest)
-        grid = self._grid(name)
-        if morph is None:
-            self.window.set_skin(placeholder, grid)
+        self.window.set_skin(self._placeholder(self.assets, self.manifest), self._grid(name))
+        self.engine = self._make_engine()  # 接管播放器的回调
+        idle = next((c for c in self.manifest.clips if c.type == "loop" and c.state == "idle"), None)
+        if idle:
+            self.player.crossfade_to(idle)  # 新引擎从这段 idle loop 出发规划
         else:
-            # 变身动画播完再换成新形象自己的点击区域
-            QTimer.singleShot(8000, lambda: self.window.set_skin(placeholder, grid) if self.skin == name else None)
-        self.engine = self._make_engine()
-        self.engine.start()
+            self.engine.start()
         self.log(f"已切换到{SKINS[name][0]}")
         if hasattr(self, "tray"):
             self.tray.refresh()
@@ -308,7 +265,7 @@ class PetApp:
         who = f"（{t.project}）" if t.project and not t.manual else ""
         self.log(f"目标 → {t.state}{who}{'［常驻］' if t.sticky else ''}{'［手动］' if t.manual else ''} #{t.seq}")
         t = self._shown(t)
-        if hasattr(self, "engine") and not self._switching:  # 切换形象期间先不交给引擎，切完用最新的目标
+        if hasattr(self, "engine"):
             self.engine.set_target(t)
         if hasattr(self, "window"):
             self.window.set_target(t)
@@ -317,8 +274,6 @@ class PetApp:
 
     def _on_engine_status(self, s: EngineStatus) -> None:
         self.engine_status = s
-        if self._switching and not self._switch_ready and s.at_target and s.target and s.target.state == "idle":
-            self._begin_switch()
         self._refresh_debug()
 
     def snapshot(self) -> dict[str, Any]:

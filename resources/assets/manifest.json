@@ -404,8 +404,5 @@
       "state": "idle",
       "file": "videos/loops/claude-girl-event-idle-tea-sway-transparent-9x16.avif"
     }
-  ],
-  "switch": {
-    "chibi": "videos/transitions/claude-girl-switch-to-chibi-transparent-9x16.avif"
-  }
+  ]
 }

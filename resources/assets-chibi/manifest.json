@@ -404,8 +404,5 @@
       "state": "reading",
       "file": "videos/loops/claude-girl-event-reading-lean-sway-transparent-9x16.avif"
     }
-  ],
-  "switch": {
-    "adult": "videos/transitions/claude-girl-switch-to-adult-transparent-9x16.avif"
-  }
+  ]
 }

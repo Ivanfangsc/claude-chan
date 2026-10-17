@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -38,8 +38,6 @@ class Manifest:
     hubs: dict[str, dict[str, Any]]
     states: dict[str, StateDef]
     clips: list[Clip]
-    # 切换到别的形象时播放的变身动画：{目标形象: 文件}，首帧是本形象的 idle 关键帧，末帧是目标形象的
-    switch: dict[str, str] = field(default_factory=dict)
 
     @staticmethod
     def from_dict(d: dict[str, Any]) -> Manifest:
@@ -58,7 +56,6 @@ class Manifest:
                 )
                 for c in d["clips"]
             ],
-            switch=d.get("switch", {}),
         )
 
     @staticmethod

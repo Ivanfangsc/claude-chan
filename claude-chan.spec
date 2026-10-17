@@ -13,7 +13,6 @@ for assets in sorted(Path("resources").glob("assets*")):
     files = {c["file"] for c in manifest["clips"]}
     files |= {s["keyframe"] for s in manifest["states"].values() if s.get("keyframe")}
     files |= {h["keyframe"] for h in manifest["hubs"].values() if h.get("keyframe")}
-    files |= {f for f in manifest.get("switch", {}).values() if (assets / f).exists()}
     files |= {"manifest.json"} | ({"hitmask.png"} if (assets / "hitmask.png").exists() else set())
     datas += [(str(assets / f), str((assets / f).parent)) for f in sorted(files)]
 
