@@ -36,7 +36,7 @@ uv sync
 uv run pyinstaller claude-chan.spec --noconfirm
 ```
 
-得到 `dist\ClaudeChan\` 目录（约 170 MB，其中素材约 90 MB，只打包 manifest 里用到的素材）。把整个目录放到固定的位置（不要放进 Program Files：设置和日志写在 exe 旁边的 `data\`，那里普通权限写不进去），运行里面的 `ClaudeChan.exe`。
+得到 `dist\ClaudeChan\` 目录（约 170 MB，其中素材约 90 MB，只打包 manifest 里用到的素材）。把整个目录放到固定的位置（推荐 `%LOCALAPPDATA%\Programs\ClaudeChan`；不要放进 Program Files：设置和日志写在 exe 旁边的 `data\`，那里普通权限写不进去），运行里面的 `ClaudeChan.exe`。
 
 ### 直接运行
 

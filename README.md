@@ -49,7 +49,7 @@ Claude Code 在思考、读代码、写代码、等你确认、做完了、出�
 ```text
 帮我安装 Claude-Chan 桌宠（https://github.com/Ivanfangsc/claude-chan），我用的是 Windows：
 1. 从 https://github.com/Ivanfangsc/claude-chan/releases/latest 下载最新的 ClaudeChan-*-windows.zip，用发布说明里的 SHA256 校验。
-2. 先问我想解压到哪个文件夹（不要自己新建目录，也不要放进 Program Files），解压后得到 <那个文件夹>\ClaudeChan\ClaudeChan.exe。
+2. 解压到 %LOCALAPPDATA%\Programs（Windows 放个人软件的标准位置），得到 %LOCALAPPDATA%\Programs\ClaudeChan\ClaudeChan.exe。如果我想放别处，先问我放哪；不要放进 Program Files。
 3. 用 PowerShell 的 Start-Process 启动 ClaudeChan.exe，让它独立于当前终端运行（直接在终端里启动的话，会话结束时它会跟着退出）。
    等几秒，确认 http://127.0.0.1:47800/health 返回 {"ok":true}。
 4. 安装 Claude Code 插件：
@@ -65,7 +65,7 @@ Claude Code 在思考、读代码、写代码、等你确认、做完了、出�
 ### 1. 运行桌宠
 
 1. 到 [Releases](https://github.com/Ivanfangsc/claude-chan/releases/latest) 下载最新的 `ClaudeChan-<版本>-windows.zip`。
-2. 解压到你平时放免安装软件的地方。以后开机自启会用这个路径，别放在“下载”里随手删掉；也别放进 `C:\Program Files`，那里普通权限写不进设置。
+2. 推荐解压到 `%LOCALAPPDATA%\Programs`（Windows 放个人软件的标准位置，不需要管理员权限），得到 `%LOCALAPPDATA%\Programs\ClaudeChan\ClaudeChan.exe`。也可以放在你平时放免安装软件的地方，但以后开机自启会用这个路径，别放在“下载”里随手删掉；也别放进 `C:\Program Files`，那里普通权限写不进设置。
 3. 双击里面的 `ClaudeChan.exe`。她会出现在屏幕右下角，托盘里也会多一个图标。
 
 > 第一次运行时 Windows 可能弹出“Windows 已保护你的电脑”：程序没有付费的代码签名。点 **更多信息 → 仍要运行** 即可。
