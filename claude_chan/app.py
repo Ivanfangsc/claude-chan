@@ -1,6 +1,6 @@
 """入口：把会话汇总、动画引擎、窗口、托盘、HTTP 服务和调试面板连起来。
 
-    uv run claude-chan            # 或 python -m claude_girl
+    uv run claude-chan            # 或 python -m claude_chan
     uv run claude-chan --debug    # 同时打开调试面板
 """
 
@@ -19,6 +19,7 @@ from PySide6.QtGui import QDesktopServices, QIcon, QImage
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication
 
+from . import __version__, logfile
 from .config import config_path, data_dir, load_config
 from .debug import DebugActions, DebugWindow
 from .engine.engine import Engine
@@ -33,9 +34,10 @@ from .server import HookServer
 from .state.sessions import SessionStore
 from .state.target import TargetHub
 from .tray import PetTray
+from .updates import UpdateChecker
 from .window import PetWindow, build_hit_grid
 
-INSTANCE_KEY = "claude-girl-pet"
+INSTANCE_KEY = "claude-chan-pet"
 
 
 class QtScheduler:
@@ -124,7 +126,14 @@ class PetApp:
             current_skin=lambda: self.skin,
             switch_skin=self.switch_skin,
             follow=(lambda: self.follower.enabled, self.follower.set_enabled) if self.follower.available else None,
+            version=__version__,
         )
+
+        updates = self.config.get("updates", {})
+        self.updates = UpdateChecker(updates.get("repo", "Ivanfangsc/claude-chan"), __version__, self.log)
+        self.updates.available.connect(self.tray.show_update)
+        if updates.get("check", True):
+            self.updates.start()
 
         self.server = HookServer(self.config["server"]["host"], self.config["server"]["port"], self.snapshot)
         self.server.event_received.connect(self.sessions.handle)
@@ -293,6 +302,7 @@ class PetApp:
         self.log_lines.append(line)
         del self.log_lines[:-200]
         print(line, flush=True)
+        logfile.write(msg)
         if self.debug:
             self.debug.append_log(line)
 
@@ -369,7 +379,8 @@ class PetApp:
 
 def main() -> None:
     app = QApplication(sys.argv)
-    app.setApplicationName("claude-girl")
+    app.setApplicationName("claude-chan")
+    app.setApplicationVersion(__version__)
     app.setQuitOnLastWindowClosed(False)  # 桌宠窗口关闭时只是隐藏到托盘
 
     # 只运行一个实例：再次启动时通知已有的实例显示桌宠并打开调试面板
@@ -379,6 +390,8 @@ def main() -> None:
         probe.write(b"show")
         probe.waitForBytesWritten(300)
         return
+    logfile.setup(data_dir() / "log.txt")
+    logfile.write(f"===== 启动 Claude-Chan v{__version__} =====")
     QLocalServer.removeServer(INSTANCE_KEY)
     instance = QLocalServer()
     instance.listen(INSTANCE_KEY)

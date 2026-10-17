@@ -214,7 +214,7 @@ D:/comfy/.venv/Scripts/python.exe scripts/export_frames.py   # webm → AVIF，�
 
 ## 配置项
 
-配置文件是 `%APPDATA%\claude-girl\config.json`（托盘菜单“打开配置文件夹”）。文件里只需要写想覆盖的键，其余用默认值。对象会逐键合并，**数组会整体替换**。修改后在托盘点“重新加载配置”，只有 `server` 的修改需要重启桌宠。
+配置文件是程序文件夹下的 `data\config.json`（打包版在 `ClaudeChan.exe` 旁边，从源码运行在仓库根目录；托盘菜单“打开配置文件夹”）。窗口位置 `window-state.json`、形象选择 `app-state.json`、日志 `log.txt` 也在这里，不写任何系统目录。文件里只需要写想覆盖的键，其余用默认值。对象会逐键合并，**数组会整体替换**。修改后在托盘点“重新加载配置”，只有 `server` 的修改需要重启桌宠。
 
 例：让桌宠 1 分钟没事件就打瞌睡，并把 `Bash` 算作读文件：
 
@@ -235,6 +235,8 @@ D:/comfy/.venv/Scripts/python.exe scripts/export_frames.py   # webm → AVIF，�
 | `window.hitTest` | `true` | 角色周围的透明区域让点击穿透 |
 | `window.hideInFullscreen` | `true` | 同一屏幕上有全屏窗口（游戏、视频、演示）时自动隐藏，退出全屏后回来；桌宠隐藏时停止解码，不占 CPU。跟随 Claude 窗口时不用它（层级跟着宿主，全屏窗口自然会盖住） |
 | `window.followProcesses` | `["claude.exe"]` | “跟随 Claude 窗口”贴着这些进程的主窗口（进程名，不分大小写）；想贴终端可加 `windowsterminal.exe` |
+| `updates.check` | `true` | 启动 10 秒后和之后每天读一次 GitHub Releases 的最新版本，比当前新时托盘通知 |
+| `updates.repo` | `"Ivanfangsc/claude-chan"` | 检查更新用的仓库 |
 | `assetsDir` | `null` | 外部素材目录（包含 `manifest.json`），`null` 为内置素材 |
 | `animation.highPriority` | `["confirmation", "error"]` | 以这些状态为目标时，立即交叉淡化离开当前 loop |
 | `animation.interruptibleLoops` | `["idle", "drowsy"]` | 离开这些状态的 loop 时不等这一轮播完 |
@@ -296,19 +298,21 @@ node scripts/simulate.mjs raw PreToolUse '{"tool_name":"Bash"}'
 ## 代码结构
 
 ```powershell
+uv run pyinstaller claude-chan.spec --noconfirm; uv run python scripts/package_release.py   # 打包并压成发布用的 zip，打印 SHA256
 uv run pytest                                    # 单元测试（路径规划、动画引擎、随机事件、事件映射、多会话汇总）
-$env:CLAUDE_GIRL_PROFILE=1; uv run claude-chan   # 每 10 秒在日志里输出各步骤的平均耗时
+$env:CLAUDE_CHAN_PROFILE=1; uv run claude-chan   # 每 10 秒在日志里输出各步骤的平均耗时
 uv run pyinstaller claude-chan.spec --noconfirm  # 打包到 dist/ClaudeChan/
 ```
 
 ```
 .claude-plugin/marketplace.json   marketplace
 plugin/                           Claude Code 插件（hooks.json）
-claude_girl/                      桌宠
+claude_chan/                      桌宠
   app.py                          入口：把各模块连起来
   window.py / tray.py / debug.py  桌宠窗口、托盘、调试面板
   follow.py / follower.py         跟随 Claude 窗口（Win32 窗口事件与 owner；找宿主、贴角、记住相对位置）
   fullscreen.py                   全屏检测
+  updates.py / logfile.py         检查更新（GitHub Releases）、日志文件（data\log.txt，含未捕获的异常）
   server.py                       HTTP 服务（后台线程，经 Qt 信号交给主线程）
   engine/                         动画引擎（engine）、路径规划（graph）、逐帧播放器（player）、manifest
   state/                          事件映射（mapper）、会话与汇总（sessions）、目标状态（target）

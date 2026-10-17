@@ -5,6 +5,9 @@
 //   node scripts/comfy/generate.mjs <任务名> --lora    # 用 4 步加速 LoRA（快约 3 倍，但动作幅度更大、结尾更容易偏离关键帧）
 //   node scripts/comfy/generate.mjs --list
 //
+// 节点搭法照着 B 站 UP 主黑鹤001《MiniMaxH3全功能低显加速流》（BV14Zu16YERZ）工作流里的“首尾帧”组，
+// 在此基础上加了 MiniMaxH3AddGuide（中间帧 / 多帧锚定）、RepeatImageBatch（定格）、参考图版（refs）和 PNG 帧输出。
+//
 // 768×1344，每段随机种子不同。默认按素材说明的原始设置：不用加速 LoRA，20 步；
 // --lora 使用 4 步加速 LoRA（强度 0.75，同原工作流的首尾帧组）。输出无损 PNG，方便后续抠图（scripts/comfy/finish.py）。
 

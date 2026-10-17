@@ -4,6 +4,8 @@ Claude-Chan 的全部动画都是在本机用开源视频模型生成的：一�
 
 这份文档记录我们最后用下来的方法，以及为什么是这样——大部分规则都是踩坑踩出来的。脚本都在 `scripts/comfy/`，用法见 README 的“素材生成（ComfyUI）”一节；这里讲原理。
 
+> 视频生成的节点搭法（首尾帧图生视频、MiniMax H3 的显存优化、4 步加速 LoRA）最早照着 B 站 UP 主 [黑鹤001](https://www.bilibili.com/video/BV14Zu16YERZ/) 的《MiniMaxH3全功能低显加速流》 的工作流搭起来，脚本里的中间帧锚定、批量生成、自动抠图和检查是在它的基础上加的。
+>
 > 环境：Windows 11，RTX 5080 16 GB，内存 32 GB；ComfyUI 0.38；MiniMax H3 图生视频（首尾帧版 `fl2va`，int8），文本编码器 NVFP4；关键帧编辑用 Qwen Image 2.1。生成 768×1344、24 fps、20 步，一段 124 帧约 10 分钟。
 
 ---

@@ -8,8 +8,8 @@ import pytest
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QApplication
 
-from claude_girl.model import DisplayTarget
-from claude_girl.window import GRID_H, GRID_W, PetWindow
+from claude_chan.model import DisplayTarget
+from claude_chan.window import GRID_H, GRID_W, PetWindow
 
 
 class StubPlayer(QObject):
@@ -33,7 +33,7 @@ def app():
 
 @pytest.fixture
 def window(app, tmp_path, monkeypatch):
-    monkeypatch.setattr("claude_girl.window.data_dir", lambda: tmp_path)
+    monkeypatch.setattr("claude_chan.window.data_dir", lambda: tmp_path)
     # 只有下半部分是“角色”，头顶那块是透明区域
     grid = [[y > GRID_H // 2 for _ in range(GRID_W)] for y in range(GRID_H)]
     w = PetWindow(StubPlayer(), None, grid, 0.25, lambda: None, lambda _p: None, lambda: None)
@@ -67,7 +67,7 @@ def test_player_pauses_while_hidden(window) -> None:
 
 
 def test_fullscreen_covers() -> None:
-    from claude_girl.fullscreen import covers
+    from claude_chan.fullscreen import covers
 
     monitor = (0, 0, 1920, 1080)
     assert covers((0, 0, 1920, 1080), monitor)  # 全屏

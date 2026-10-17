@@ -11,8 +11,8 @@ from pathlib import Path
 import numpy as np
 sys.path.insert(0, "scripts")
 from analyze_loop import decode, diff, jerk, ASSETS as A
-from claude_girl.engine.manifest import Manifest
-from claude_girl.engine.graph import Graph
+from claude_chan.engine.manifest import Manifest
+from claude_chan.engine.graph import Graph
 
 m = Manifest.load(A / "manifest.json")
 m.clips[:] = [c for c in m.clips if (A / c.file).exists()]

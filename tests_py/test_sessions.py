@@ -4,10 +4,10 @@ import copy
 
 import pytest
 
-from claude_girl.config import DEFAULT_CONFIG
-from claude_girl.model import DisplayTarget, FakeScheduler
-from claude_girl.state.mapper import Action, map_event, project_of, source_of, tool_state
-from claude_girl.state.sessions import SessionStore
+from claude_chan.config import DEFAULT_CONFIG
+from claude_chan.model import DisplayTarget, FakeScheduler
+from claude_chan.state.mapper import Action, map_event, project_of, source_of, tool_state
+from claude_chan.state.sessions import SessionStore
 
 CFG = copy.deepcopy(DEFAULT_CONFIG["state"])
 TOOLS = CFG["tools"]

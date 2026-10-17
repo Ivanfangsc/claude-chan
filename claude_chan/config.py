@@ -1,7 +1,7 @@
 """配置：默认值写在这里，用户只需在配置文件里写想覆盖的键。
 
-配置文件位置：Windows 是 %APPDATA%\\claude-girl\\config.json，macOS 是
-~/Library/Application Support/claude-girl/config.json，Linux 是 ~/.config/claude-girl/config.json。
+配置文件和其他数据（窗口位置、形象选择、日志）都放在程序自己的 data 文件夹里：打包版是 ClaudeChan.exe 旁边的
+data\\，从源码运行是仓库根目录的 data/。不往 %APPDATA% 之类的系统目录写任何东西，删掉程序文件夹就删干净了。
 对象逐键合并；数组和其他值整体替换。
 """
 
@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -26,6 +25,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         # 托盘里打开“跟随 Claude 窗口”后，贴着这些进程的主窗口（Claude 桌面版）
         "followProcesses": ["claude.exe"],
     },
+    # 检查更新：启动 10 秒后和之后每天读一次 GitHub Releases 的最新版本，有新版本时托盘提示
+    "updates": {"check": True, "repo": "Ivanfangsc/claude-chan"},
     # 素材目录（包含 manifest.json）；None 表示使用内置素材
     "assetsDir": None,
     "animation": {
@@ -94,15 +95,16 @@ DEFAULT_CONFIG: dict[str, Any] = {
 }
 
 
+def app_dir() -> Path:
+    """程序所在的文件夹：打包版是 ClaudeChan.exe 所在目录，从源码运行是仓库根目录。"""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parents[1]
+
+
 def data_dir() -> Path:
-    """配置、窗口状态等数据的目录（与 Electron 版共用同一个位置）。"""
-    if sys.platform == "win32":
-        base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
-    elif sys.platform == "darwin":
-        base = Path.home() / "Library" / "Application Support"
-    else:
-        base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-    return base / "claude-girl"
+    """配置、窗口状态、日志等数据的目录（便携：跟着程序走）。"""
+    return app_dir() / "data"
 
 
 def config_path() -> Path:

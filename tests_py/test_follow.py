@@ -1,6 +1,6 @@
 """跟随模式里摆位置的计算（纯函数，不碰真实窗口）。"""
 
-from claude_girl.follow import offsets, place
+from claude_chan.follow import offsets, place
 
 HOST = (100, 50, 1100, 850)  # 1000 × 800
 

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Callable
 
-from PySide6.QtCore import QPoint
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtCore import QPoint, QUrl
+from PySide6.QtGui import QAction, QDesktopServices, QIcon
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
 from . import autostart
@@ -26,9 +26,17 @@ class PetTray:
         current_skin: Callable[[], str] = lambda: "adult",
         switch_skin: Callable[[str], None] = lambda _name: None,
         follow: tuple[Callable[[], bool], Callable[[bool], None]] | None = None,
+        version: str = "",
     ) -> None:
         self._pet = pet
         self._menu = QMenu()
+        # 第一行：版本号；有新版本时变成可点的“下载新版本”
+        self._version = version
+        self._update_url = ""
+        self._about = self._menu.addAction(f"Claude-Chan v{version}" if version else "Claude-Chan")
+        self._about.setEnabled(False)
+        self._about.triggered.connect(lambda: self._update_url and QDesktopServices.openUrl(QUrl(self._update_url)))
+        self._menu.addSeparator()
         self._current_skin = current_skin
         self._skin_actions: dict[str, QAction] = {}
         self._show = self._check("显示桌宠", pet.toggle_visible)
@@ -92,6 +100,15 @@ class PetTray:
     def show_target(self, t: DisplayTarget) -> None:
         who = f"（{t.project}）" if t.project and not t.manual else ""
         self._tray.setToolTip(f"Claude-Chan · {t.state}{who}")
+
+    def show_update(self, tag: str, url: str) -> None:
+        """有新版本：菜单第一行变成下载入口；同一个版本只弹一次通知。"""
+        first = self._update_url != url
+        self._update_url = url
+        self._about.setText(f"有新版本 {tag}，点击下载（当前 v{self._version}）")
+        self._about.setEnabled(True)
+        if first:
+            self._tray.showMessage("Claude-Chan 有新版本", f"{tag} 已发布，右键托盘图标可以打开下载页。")
 
     def hide(self) -> None:
         self._tray.hide()

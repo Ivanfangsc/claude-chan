@@ -40,7 +40,7 @@ SPEED = 6  # libavif 编码速度 0–10，越大越快、压缩率略低
 # 输出宽度。桌宠默认宽度约为屏幕的 1/4（1080p 屏约 480 像素），540 已经够清晰；
 # 解码量只有原尺寸 774 的一半，CPU 占用明显下降。把桌宠放得很大时可以用 --width 774 导出原尺寸。
 DEFAULT_WIDTH = 540
-GRID_W, GRID_H = 64, 114  # 点击网格，与 claude_girl/window.py 一致
+GRID_W, GRID_H = 64, 114  # 点击网格，与 claude_chan/window.py 一致
 RETIME_EDGE = 0.45  # 提速范围从首尾往里最多延伸多少比例
 RETIME_CAP = 4.0  # 最多提速几倍
 RETIME_GAMMA = 0.5  # 提速倍数 = (中段速度 / 当前速度)^GAMMA；1 为拉成匀速，0 为不提速

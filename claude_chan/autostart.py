@@ -7,14 +7,14 @@ import shlex
 import sys
 from pathlib import Path
 
-APP_ID = "claude-girl"
+APP_ID = "claude-chan"
 
 
 def launch_command() -> list[str]:
     """打包后直接启动可执行文件；开发时用当前 Python 运行模块。"""
     if getattr(sys, "frozen", False):
         return [sys.executable]
-    return [sys.executable, "-m", "claude_girl"]
+    return [sys.executable, "-m", "claude_chan"]
 
 
 def _mac_plist() -> Path:

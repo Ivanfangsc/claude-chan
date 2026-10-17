@@ -45,7 +45,7 @@ Claude Code 在思考、读代码、写代码、等你确认、做完了、出�
 ### 1. 运行桌宠
 
 1. 到 [Releases](https://github.com/Ivanfangsc/claude-chan/releases/latest) 下载最新的 `ClaudeChan-<版本>-windows.zip`。
-2. 解压到一个固定的位置，比如 `%LOCALAPPDATA%\Programs\ClaudeChan`（以后开机自启会用这个路径，不要放在“下载”里随手删掉）。
+2. 解压到一个固定的位置，比如 `D:\Apps\ClaudeChan`。以后开机自启会用这个路径，别放在“下载”里随手删掉；也别放进 `C:\Program Files`，那里普通权限写不进设置。
 3. 双击里面的 `ClaudeChan.exe`。她会出现在屏幕右下角，托盘里也会多一个图标。
 
 > 第一次运行时 Windows 可能弹出“Windows 已保护你的电脑”：程序没有付费的代码签名。点 **更多信息 → 仍要运行** 即可。
@@ -120,6 +120,7 @@ networkingMode=mirrored
 | `animation.eventChance` | `0.25` | 随机小动作出现的频率，`0` 关闭 |
 | `window.hideInFullscreen` | `true` | 有全屏窗口时自动隐藏 |
 | `window.followProcesses` | `["claude.exe"]` | “跟随窗口”要贴的程序，想贴终端可以加 `"windowsterminal.exe"` |
+| `updates.check` | `true` | 是否检查新版本 |
 
 全部设置见[开发文档的配置项](docs/development.md#配置项)。
 
@@ -132,6 +133,12 @@ networkingMode=mirrored
 - Claude 桌面版里，输入框的 **+ → Plugins** 应该能看到它（只对本地会话生效，云端会话不加载本地插件）；
 - 如果你在 Claude Code 的设置里配置过 `allowedHttpHookUrls`，需要把 `http://127.0.0.1:47800/event` 加进去。
 
+**她自己消失了 / 出了别的问题？**
+菜单里点 **打开配置文件夹**，里面的 `log.txt` 记录了她收到的事件和出错信息（包括崩溃时的错误）。提问题时附上它会很有帮助。
+
+**怎么更新？**
+有新版本时，托盘会弹一次通知，菜单第一行也会变成“有新版本，点击下载”。下载新的压缩包，先退出旧的，解压覆盖原来的文件夹即可。设置在 `data` 文件夹里，压缩包里没有这个文件夹，覆盖时不会被动到。
+
 **会拖慢 Claude Code 吗？**
 她开着的时候，每个事件几毫秒就处理完。没开时，每次工具调用最多多等约 0.4 秒。
 
@@ -139,7 +146,7 @@ networkingMode=mirrored
 内存约 100 MB。播放动画时大约占一个 CPU 核心的四分之一；被隐藏、全屏让开时停止解码，几乎不占 CPU。
 
 **会联网或上传什么吗？**
-不会。她只在本机 `127.0.0.1:47800` 接收 Claude Code 发来的事件，不连接任何外部服务器。
+不会上传任何东西。她只在本机 `127.0.0.1:47800` 接收 Claude Code 发来的事件。唯一的联网是检查更新：启动后和之后每天，向 GitHub 查一次最新版本号（一个普通的 GET 请求）。不想要的话，在配置里写 `"updates": { "check": false }`。
 
 **怎么卸载？**
 
@@ -148,10 +155,8 @@ claude plugin uninstall claude-chan@claude-chan
 claude plugin marketplace remove claude-chan
 ```
 
-再在菜单里取消开机自启、退出，删掉解压出来的文件夹即可。设置保存在 `%APPDATA%\claude-girl`，也可以一并删掉。
+再在菜单里取消开机自启、退出，删掉解压出来的文件夹即可。她的设置、窗口位置和日志都在这个文件夹的 `data` 里，不会在系统目录里留下任何东西。
 
-**以前装过 claude-girl？**
-这是改名前的版本。先卸载旧插件（`claude plugin uninstall claude-girl@claude-girl`、`claude plugin marketplace remove claude-girl`），再按上面安装，不然两个插件会各发一遍事件。原来的设置会继续生效。
 
 ## 她是怎么做出来的
 
@@ -163,6 +168,7 @@ claude plugin marketplace remove claude-chan
 
 - **人设**：B 站 UP 主 [ZipZipPipe](https://www.bilibili.com/opus/1233069202138464289) 的《所有的AI们，和OpenCode》（原作者以 CC BY-NC-SA 4.0 授权）。Claude-Chan 是在这份人设的基础上二次创作的。
 - **模型**：[Qwen Image 2.1](https://huggingface.co/Qwen/Qwen-Image-2.1)（关键帧编辑），[MiniMax H3](https://huggingface.co/MiniMaxAI/MiniMax-H3)（动画生成），运行在 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 上。
+- **工作流**：视频生成的节点搭法（首尾帧图生视频、显存优化、4 步加速 LoRA 的用法）来自 B 站 UP 主 [黑鹤001](https://www.bilibili.com/video/BV14Zu16YERZ/) 的《MiniMaxH3全功能低显加速流》；在此基础上加了中间帧锚定、批量生成和自动抠图。
 - **参考**：[dsh-pet](https://github.com/PC2005-cloud/dsh-pet)（“道具从无到有再到无”的写法），[GPT-Niang](https://github.com/T7moris/GPT-Niang)（跟随主窗口的做法）。
 
 ## 许可

@@ -8,11 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from claude_girl.config import DEFAULT_CONFIG
-from claude_girl.engine.engine import Engine
-from claude_girl.engine.graph import Graph
-from claude_girl.engine.manifest import Clip, Manifest, validate_manifest
-from claude_girl.model import DisplayTarget, FakeScheduler
+from claude_chan.config import DEFAULT_CONFIG
+from claude_chan.engine.engine import Engine
+from claude_chan.engine.graph import Graph
+from claude_chan.engine.manifest import Clip, Manifest, validate_manifest
+from claude_chan.model import DisplayTarget, FakeScheduler
 
 ROOT = Path(__file__).resolve().parents[1]
 REAL = Manifest.load(ROOT / "resources" / "assets" / "manifest.json")

@@ -1,4 +1,4 @@
-"""轻量性能统计：设置环境变量 CLAUDE_GIRL_PROFILE=1 时，每 10 秒在日志里写一行各步骤的平均耗时。"""
+"""轻量性能统计：设置环境变量 CLAUDE_CHAN_PROFILE=1 时，每 10 秒在日志里写一行各步骤的平均耗时。"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from typing import Callable, Iterator
 
-ENABLED = os.environ.get("CLAUDE_GIRL_PROFILE") == "1"
+ENABLED = os.environ.get("CLAUDE_CHAN_PROFILE") == "1"
 _totals: dict[str, float] = defaultdict(float)
 _counts: dict[str, int] = defaultdict(int)
 _last_report = time.monotonic()
