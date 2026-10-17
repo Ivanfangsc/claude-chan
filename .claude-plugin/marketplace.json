@@ -1,0 +1,12 @@
+{
+  "name": "claude-chan",
+  "owner": { "name": "Ivanfangsc" },
+  "description": "Claude-Chan 桌宠：把 Claude Code 的工作状态推送给桌面上的 Claude-Chan",
+  "plugins": [
+    {
+      "name": "claude-chan",
+      "source": "./plugin",
+      "description": "通过 HTTP hook 把 Claude Code 的事件发送给本机的 Claude-Chan 桌宠（127.0.0.1:47800）"
+    }
+  ]
+}

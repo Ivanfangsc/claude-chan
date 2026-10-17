@@ -1,0 +1,411 @@
+{
+  "version": 1,
+  "fps": 24,
+  "width": 774,
+  "height": 1376,
+  "hubs": {
+    "A": {
+      "keyframe": "keyframes/claude-girl-hub-A-approved-transparent-9x16.png"
+    },
+    "B": {
+      "keyframe": "keyframes/claude-girl-hub-B-approved-transparent-9x16.png"
+    }
+  },
+  "states": {
+    "idle": {
+      "hub": "A",
+      "kind": "loop",
+      "atHub": true,
+      "keyframe": "keyframes/claude-girl-hub-A-approved-transparent-9x16.png"
+    },
+    "waiting": {
+      "hub": "A",
+      "kind": "loop",
+      "atHub": true,
+      "keyframe": "keyframes/claude-girl-hub-A-approved-transparent-9x16.png"
+    },
+    "thinking": {
+      "hub": "A",
+      "kind": "loop",
+      "keyframe": "keyframes/claude-girl-thinking-transparent-9x16.png"
+    },
+    "confirmation": {
+      "hub": "A",
+      "kind": "loop",
+      "keyframe": "keyframes/claude-girl-waiting-confirmation-transparent-9x16.png"
+    },
+    "complete": {
+      "hub": "A",
+      "kind": "loop",
+      "keyframe": "keyframes/claude-girl-complete-transparent-9x16.png"
+    },
+    "error": {
+      "hub": "A",
+      "kind": "oneshot",
+      "keyframe": "keyframes/claude-girl-error-v3-transparent-9x16.png"
+    },
+    "drowsy": {
+      "hub": "A",
+      "kind": "loop",
+      "keyframe": "keyframes/claude-girl-drowsy-transparent-9x16.png"
+    },
+    "reading": {
+      "hub": "B",
+      "kind": "loop",
+      "keyframe": "keyframes/claude-girl-reading-transparent-9x16.png"
+    },
+    "writing": {
+      "hub": "B",
+      "kind": "loop",
+      "keyframe": "keyframes/claude-girl-writing-transparent-9x16.png"
+    }
+  },
+  "clips": [
+    {
+      "id": "hub-A-to-B",
+      "type": "transition",
+      "from": "A",
+      "to": "B",
+      "file": "videos/transitions/claude-girl-hub-A-to-B-transparent-9x16.avif"
+    },
+    {
+      "id": "hub-B-to-A",
+      "type": "transition",
+      "from": "B",
+      "to": "A",
+      "file": "videos/transitions/claude-girl-hub-B-to-A-transparent-9x16.avif"
+    },
+    {
+      "id": "idle-loop",
+      "type": "loop",
+      "state": "idle",
+      "file": "videos/loops/claude-girl-loop-idle-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "idle-loop-2",
+      "type": "loop",
+      "state": "idle",
+      "file": "videos/loops/claude-girl-loop-idle-sway-2-transparent-9x16.avif"
+    },
+    {
+      "id": "thinking-intro",
+      "type": "intro",
+      "state": "thinking",
+      "from": "A",
+      "file": "videos/transitions/claude-girl-thinking-hub-to-state-transparent-9x16.avif"
+    },
+    {
+      "id": "thinking-outro",
+      "type": "outro",
+      "state": "thinking",
+      "to": "A",
+      "file": "videos/transitions/claude-girl-thinking-state-to-hub-transparent-9x16.avif"
+    },
+    {
+      "id": "thinking-loop",
+      "type": "loop",
+      "state": "thinking",
+      "file": "videos/loops/claude-girl-loop-thinking-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "thinking-loop-2",
+      "type": "loop",
+      "state": "thinking",
+      "file": "videos/loops/claude-girl-loop-thinking-sway-2-transparent-9x16.avif"
+    },
+    {
+      "id": "confirmation-intro",
+      "type": "intro",
+      "state": "confirmation",
+      "from": "A",
+      "file": "videos/transitions/claude-girl-confirmation-hub-to-state-transparent-9x16.avif"
+    },
+    {
+      "id": "confirmation-outro",
+      "type": "outro",
+      "state": "confirmation",
+      "to": "A",
+      "file": "videos/transitions/claude-girl-confirmation-state-to-hub-transparent-9x16.avif"
+    },
+    {
+      "id": "confirmation-loop",
+      "type": "loop",
+      "state": "confirmation",
+      "file": "videos/loops/claude-girl-loop-confirmation-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "confirmation-loop-2",
+      "type": "loop",
+      "state": "confirmation",
+      "file": "videos/loops/claude-girl-loop-confirmation-sway-2-transparent-9x16.avif"
+    },
+    {
+      "id": "complete-intro",
+      "type": "intro",
+      "state": "complete",
+      "from": "A",
+      "file": "videos/transitions/claude-girl-complete-hub-to-state-transparent-9x16.avif"
+    },
+    {
+      "id": "complete-outro",
+      "type": "outro",
+      "state": "complete",
+      "to": "A",
+      "file": "videos/transitions/claude-girl-complete-state-to-hub-transparent-9x16.avif"
+    },
+    {
+      "id": "error-intro",
+      "type": "intro",
+      "state": "error",
+      "from": "A",
+      "file": "videos/transitions/claude-girl-error-hub-to-state-transparent-9x16.avif"
+    },
+    {
+      "id": "error-outro",
+      "type": "outro",
+      "state": "error",
+      "to": "A",
+      "file": "videos/transitions/claude-girl-error-state-to-hub-transparent-9x16.avif"
+    },
+    {
+      "id": "drowsy-intro",
+      "type": "intro",
+      "state": "drowsy",
+      "from": "A",
+      "file": "videos/transitions/claude-girl-drowsy-hub-to-state-transparent-9x16.avif"
+    },
+    {
+      "id": "drowsy-outro",
+      "type": "outro",
+      "state": "drowsy",
+      "to": "A",
+      "file": "videos/transitions/claude-girl-drowsy-state-to-hub-transparent-9x16.avif"
+    },
+    {
+      "id": "drowsy-loop",
+      "type": "loop",
+      "state": "drowsy",
+      "file": "videos/loops/claude-girl-loop-drowsy-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "reading-intro",
+      "type": "intro",
+      "state": "reading",
+      "from": "B",
+      "file": "videos/transitions/claude-girl-reading-hub-to-state-transparent-9x16.avif"
+    },
+    {
+      "id": "reading-outro",
+      "type": "outro",
+      "state": "reading",
+      "to": "B",
+      "file": "videos/transitions/claude-girl-reading-state-to-hub-transparent-9x16.avif"
+    },
+    {
+      "id": "reading-loop",
+      "type": "loop",
+      "state": "reading",
+      "file": "videos/loops/claude-girl-loop-reading-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "reading-loop-2",
+      "type": "loop",
+      "state": "reading",
+      "file": "videos/loops/claude-girl-loop-reading-sway-2-transparent-9x16.avif"
+    },
+    {
+      "id": "writing-intro",
+      "type": "intro",
+      "state": "writing",
+      "from": "B",
+      "file": "videos/transitions/claude-girl-writing-hub-to-state-transparent-9x16.avif"
+    },
+    {
+      "id": "writing-outro",
+      "type": "outro",
+      "state": "writing",
+      "to": "B",
+      "file": "videos/transitions/claude-girl-writing-state-to-hub-transparent-9x16.avif"
+    },
+    {
+      "id": "writing-loop",
+      "type": "loop",
+      "state": "writing",
+      "file": "videos/loops/claude-girl-loop-writing-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "writing-loop-2",
+      "type": "loop",
+      "state": "writing",
+      "file": "videos/loops/claude-girl-loop-writing-sway-2-transparent-9x16.avif"
+    },
+    {
+      "id": "complete-loop",
+      "type": "loop",
+      "state": "complete",
+      "file": "videos/loops/claude-girl-loop-complete-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "complete-loop-2",
+      "type": "loop",
+      "state": "complete",
+      "file": "videos/loops/claude-girl-loop-complete-sway-2-transparent-9x16.avif"
+    },
+    {
+      "id": "event-idle-yawn",
+      "type": "event",
+      "state": "idle",
+      "file": "videos/loops/claude-girl-event-idle-yawn-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-idle-look",
+      "type": "event",
+      "state": "idle",
+      "file": "videos/loops/claude-girl-event-idle-look-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-thinking-tap",
+      "type": "event",
+      "state": "thinking",
+      "file": "videos/loops/claude-girl-event-thinking-tap-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-thinking-ponder",
+      "type": "event",
+      "state": "thinking",
+      "file": "videos/loops/claude-girl-event-thinking-ponder-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-reading-rub",
+      "type": "event",
+      "state": "reading",
+      "file": "videos/loops/claude-girl-event-reading-rub-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-reading-lean",
+      "type": "event",
+      "state": "reading",
+      "file": "videos/loops/claude-girl-event-reading-lean-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-writing-review",
+      "type": "event",
+      "state": "writing",
+      "file": "videos/loops/claude-girl-event-writing-review-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-writing-shake",
+      "type": "event",
+      "state": "writing",
+      "file": "videos/loops/claude-girl-event-writing-shake-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-confirmation-wave",
+      "type": "event",
+      "state": "confirmation",
+      "file": "videos/loops/claude-girl-event-confirmation-wave-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-confirmation-lean",
+      "type": "event",
+      "state": "confirmation",
+      "file": "videos/loops/claude-girl-event-confirmation-lean-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-drowsy-jolt",
+      "type": "event",
+      "state": "drowsy",
+      "file": "videos/loops/claude-girl-event-drowsy-jolt-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-complete-lift",
+      "type": "event",
+      "state": "complete",
+      "file": "videos/loops/claude-girl-event-complete-lift-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "waiting-loop",
+      "type": "loop",
+      "state": "waiting",
+      "file": "videos/loops/claude-girl-loop-idle-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "waiting-loop-2",
+      "type": "loop",
+      "state": "waiting",
+      "file": "videos/loops/claude-girl-loop-idle-sway-2-transparent-9x16.avif"
+    },
+    {
+      "id": "event-waiting-watch",
+      "type": "event",
+      "state": "waiting",
+      "file": "videos/loops/claude-girl-event-waiting-watch-sway-transparent-9x16.avif",
+      "chance": 0.6,
+      "cooldownMs": 20000,
+      "group": "watch"
+    },
+    {
+      "id": "event-idle-flower",
+      "type": "event",
+      "state": "idle",
+      "file": "videos/loops/claude-girl-event-idle-flower-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-idle-pages",
+      "type": "event",
+      "state": "idle",
+      "file": "videos/loops/claude-girl-event-idle-pages-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-idle-rest",
+      "type": "event",
+      "state": "idle",
+      "file": "videos/loops/claude-girl-event-idle-rest-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-idle-gaze",
+      "type": "event",
+      "state": "idle",
+      "file": "videos/loops/claude-girl-event-idle-gaze-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-reading-page",
+      "type": "event",
+      "state": "reading",
+      "file": "videos/loops/claude-girl-event-reading-page-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-writing-ink",
+      "type": "event",
+      "state": "writing",
+      "file": "videos/loops/claude-girl-event-writing-ink-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-confirmation-tap2",
+      "type": "event",
+      "state": "confirmation",
+      "file": "videos/loops/claude-girl-event-confirmation-tap2-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-complete-hum",
+      "type": "event",
+      "state": "complete",
+      "file": "videos/loops/claude-girl-event-complete-hum-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-drowsy-bubble",
+      "type": "event",
+      "state": "drowsy",
+      "file": "videos/loops/claude-girl-event-drowsy-bubble-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "event-idle-tea",
+      "type": "event",
+      "state": "idle",
+      "file": "videos/loops/claude-girl-event-idle-tea-sway-transparent-9x16.avif"
+    }
+  ],
+  "switch": {
+    "chibi": "videos/transitions/claude-girl-switch-to-chibi-transparent-9x16.avif"
+  }
+}

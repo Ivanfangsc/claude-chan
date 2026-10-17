@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+.scratch/
+# 素材体积大，不进 git；见 README“素材”一节（manifest.json 在 git 里）
+resources/assets/keyframes/
+resources/assets/videos/
+resources/assets/hitmask.png
+resources/assets-chibi/keyframes/
+resources/assets-chibi/videos/
+resources/assets-chibi/hitmask.png
+promo/

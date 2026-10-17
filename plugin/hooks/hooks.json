@@ -1,0 +1,115 @@
+{
+  "description": "把 Claude Code 的事件推送给 Claude-Chan 桌宠。所有事件都发送，由桌宠决定如何映射。HTTP hook 会阻塞等待响应：桌宠开着时响应只需几毫秒；桌宠没开时每个 hook 最多等 0.2 秒。SessionStart 不支持 HTTP hook，会话由它的第一个事件自动创建。",
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:47800/event",
+            "timeout": 0.2
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:47800/event",
+            "timeout": 0.2
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:47800/event",
+            "timeout": 0.2
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:47800/event",
+            "timeout": 0.2
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:47800/event",
+            "timeout": 0.2
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:47800/event",
+            "timeout": 0.2
+          }
+        ]
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:47800/event",
+            "timeout": 0.2
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:47800/event",
+            "timeout": 0.2
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:47800/event",
+            "timeout": 0.2
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:47800/event",
+            "timeout": 0.2
+          }
+        ]
+      }
+    ]
+  }
+}
