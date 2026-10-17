@@ -1,6 +1,6 @@
 {
   "name": "claude-chan",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "通过 HTTP hook 把 Claude Code 的事件发送给本机的 Claude-Chan 桌宠（127.0.0.1:47800）。桌宠没开时静默失败，不影响 Claude Code。",
   "author": { "name": "Ivanfangsc" }
 }
