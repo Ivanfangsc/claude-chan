@@ -126,7 +126,9 @@ class PetApp:
         self.follower = Follower(self.window, self.config["window"].get("followProcesses", ["claude.exe"]), self.log)
         self.bubble = Bubble(self.window)
         self.bubble.clicked.connect(self._jump_to_waiting)
+        self.bubble.dismissed.connect(self._dismiss_bubble)
         self._bubble_target: DisplayTarget | None = None
+        self._bubble_dismissed: tuple | None = None  # 右键收起的那一个（会话 + 内容），换了新的请求再显示
         self._icon = QIcon(str(root / "resources" / "icon.png"))
         self.settings_dialog: SettingsDialog | None = None
         self.tray = PetTray(
@@ -309,7 +311,16 @@ class PetApp:
         if not t or t.state != "confirmation" or not cfg.get("enabled", True) or not self.window.isVisible():
             self.bubble.show_content(None)
             return
+        if self._bubble_dismissed == (t.session_id, t.ask):
+            self.bubble.show_content(None)
+            return
         self.bubble.show_content(content_of(t, self._session_title(t), cfg.get("showCommands", False)))
+
+    def _dismiss_bubble(self) -> None:
+        t = self._bubble_target
+        if t:
+            self._bubble_dismissed = (t.session_id, t.ask)
+            self.bubble.show_content(None)
 
     def _jump_to_waiting(self) -> None:
         """点气泡：桌面版的会话直接打开；命令行的会话把它所在的终端 / VS Code 窗口切到前面。"""

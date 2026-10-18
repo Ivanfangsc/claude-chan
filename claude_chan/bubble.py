@@ -4,7 +4,8 @@
 排版（从上到下）：标题行（项目标签 + 等你确认 / 想问你……，后面跟会话标题）、Claude 的一句话、
 等宽小字的具体内容（文件和改动行数、网址、命令）、问题的选项、底部“另外 N 个会话也在等你”。
 字太多时：宽度固定（跟她的大小一起缩放），一句话最多两行，等宽内容一行、省略中间，选项最多两行、
-放不下的显示成“+N”。鼠标悬停时展开显示全文；点击发出 clicked（由 PetApp 跳回对应的会话）。
+放不下的显示成“+N”。鼠标悬停时展开显示全文；左键点击发出 clicked（由 PetApp 跳回对应的会话），
+右键发出 dismissed（收起这一个）。
 """
 
 from __future__ import annotations
@@ -93,6 +94,7 @@ def _wrap(text: str, fm: QFontMetricsF, width: float, max_lines: int) -> list[st
 
 class Bubble(QWidget):
     clicked = Signal()
+    dismissed = Signal()  # 右键：收起这一个，直到下一次有新的请求
 
     def __init__(self, owner: QWidget) -> None:
         super().__init__(owner, Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint | Qt.WindowType.NoDropShadowWindowHint)
@@ -358,3 +360,5 @@ class Bubble(QWidget):
     def mouseReleaseEvent(self, event) -> None:  # noqa: N802
         if event.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit()
+        elif event.button() == Qt.MouseButton.RightButton:
+            self.dismissed.emit()
