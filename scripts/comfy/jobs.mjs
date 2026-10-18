@@ -145,6 +145,16 @@ if (SKIN === 'chibi') {
     prompt: '她偷偷睁开一只眼睛看了看，确认没事后慢慢松开抱着脑袋的双手，若无其事地坐正，双手放回膝上的书上，恢复冷淡的表情'
   }
 }
+// 直达过渡：工作中最常切换的三个状态之间直接过去，不再“退场 → 回枢纽 → 换枢纽 → 进场”绕三段（思考 → 写代码原来要 15.5 秒）。
+// manifest 里登记为 type "direct"，from / to 是状态名；引擎按最短路径走，自然会选它
+Object.assign(TRANSITIONS, {
+  'thinking-to-reading': { first: 'thinking', last: 'reading', frames: 56, prompt: `她放下抵着下巴的手，把膝上合着的书打开，双手捧着摊开的书，低头开始阅读，书打开后不再翻页` },
+  'reading-to-thinking': { first: 'reading', last: 'thinking', frames: 56, prompt: '她从书页上抬起视线，把书合上放回膝上，抬起右手用食指轻轻抵住下巴，若有所思' },
+  'thinking-to-writing': { first: 'thinking', last: 'writing', frames: 56, prompt: '她放下抵着下巴的手，把膝上的书打开平放，书页朝上，然后拿起羽毛笔，在书页上轻轻落笔' },
+  'writing-to-thinking': { first: 'writing', last: 'thinking', frames: 56, prompt: '她放下羽毛笔，合上书放回膝上，抬起右手用食指轻轻抵住下巴，若有所思' },
+  'reading-to-writing': { first: 'reading', last: 'writing', frames: 56, prompt: `她把摊开的书轻轻放平，书页朝上，拿起羽毛笔，在书页上轻轻落笔，不要翻页` },
+  'writing-to-reading': { first: 'writing', last: 'reading', frames: 56, prompt: `她放下羽毛笔，双手捧起摊开的书，把书稍稍立起来，低头阅读，不要翻页` }
+})
 for (const [file, t] of Object.entries(TRANSITIONS)) JOBS[`t-${file}`] = { transition: file, ...t }
 
 /**

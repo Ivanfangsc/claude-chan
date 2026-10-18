@@ -403,6 +403,41 @@
       "type": "event",
       "state": "reading",
       "file": "videos/loops/claude-girl-event-reading-lean-sway-transparent-9x16.avif"
+    },
+    {
+      "id": "thinking-to-reading",
+      "type": "direct",
+      "from": "thinking",
+      "to": "reading",
+      "file": "videos/transitions/claude-girl-thinking-to-reading-transparent-9x16.avif"
+    },
+    {
+      "id": "reading-to-thinking",
+      "type": "direct",
+      "from": "reading",
+      "to": "thinking",
+      "file": "videos/transitions/claude-girl-reading-to-thinking-transparent-9x16.avif"
+    },
+    {
+      "id": "thinking-to-writing",
+      "type": "direct",
+      "from": "thinking",
+      "to": "writing",
+      "file": "videos/transitions/claude-girl-thinking-to-writing-transparent-9x16.avif"
+    },
+    {
+      "id": "writing-to-thinking",
+      "type": "direct",
+      "from": "writing",
+      "to": "thinking",
+      "file": "videos/transitions/claude-girl-writing-to-thinking-transparent-9x16.avif"
+    },
+    {
+      "id": "writing-to-reading",
+      "type": "direct",
+      "from": "writing",
+      "to": "reading",
+      "file": "videos/transitions/claude-girl-writing-to-reading-transparent-9x16.avif"
     }
   ]
 }

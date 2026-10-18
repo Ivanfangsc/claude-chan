@@ -11,7 +11,7 @@ from typing import Any
 @dataclass(frozen=True)
 class Clip:
     id: str
-    type: str  # intro / loop / event / outro / transition
+    type: str  # intro / loop / event / outro / transition / direct
     file: str
     state: str | None = None  # intro / loop / outro 所属状态
     frm: str | None = None  # intro、transition 的起点枢纽（manifest 里的 "from"）
@@ -81,6 +81,12 @@ def validate_manifest(m: Manifest) -> list[str]:
         seen.add(c.id)
         if c.state and c.state not in m.states:
             errors.append(f"片段 {c.id} 引用了未知状态 {c.state}")
+        if c.type == "direct":
+            # 直达过渡：from / to 是状态名，两头都得是有 loop 的状态
+            for s in (c.frm, c.to):
+                if not s or s not in m.states or m.states[s].kind != "loop":
+                    errors.append(f"直达过渡 {c.id} 的 from / to 必须是 loop 状态（{s}）")
+            continue
         for h in (c.frm, c.to):
             if h and h not in m.hubs:
                 errors.append(f"片段 {c.id} 引用了未知枢纽 {h}")

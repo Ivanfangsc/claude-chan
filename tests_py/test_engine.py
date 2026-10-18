@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REAL = Manifest.load(ROOT / "resources" / "assets" / "manifest.json")
 # 测试基准：去掉 loop 变体（xxx-loop-2 等）和随机事件，每个状态只有一段 loop，结果可预测
 BASE = dataclasses.replace(
-    REAL, clips=[c for c in REAL.clips if c.type != "event" and not re.search(r"-loop-\d+$", c.id)]
+    REAL, clips=[c for c in REAL.clips if c.type not in ("event", "direct") and not re.search(r"-loop-\d+$", c.id)]
 )
 WITH_VARIANTS = dataclasses.replace(
     BASE,
@@ -62,6 +62,29 @@ def test_paths() -> None:
     assert ids("reading", "writing") == ["reading-outro", "writing-intro"]
     assert ids("writing", "reading") == ["writing-outro", "reading-intro"]
     assert ids("writing", "idle") == ["writing-outro", "hub-B-to-A"]
+
+
+def test_direct_transitions_take_the_short_way() -> None:
+    """状态之间有直达过渡时，不再绕枢纽；没有直达的照旧走枢纽。"""
+    direct = dataclasses.replace(BASE, clips=[
+        *BASE.clips,
+        Clip("thinking-to-writing", "direct", "d.avif", None, "thinking", "writing"),
+        Clip("writing-to-reading", "direct", "e.avif", None, "writing", "reading"),
+    ])
+    assert validate_manifest(direct) == []
+    g = Graph(direct)
+    path = lambda a, b: [c.id for c in g.path(g.node_of_state(a), g.node_of_state(b))]
+    assert path("thinking", "writing") == ["thinking-to-writing"]
+    assert path("writing", "reading") == ["writing-to-reading"]
+    assert path("writing", "thinking") == ["writing-outro", "hub-B-to-A", "thinking-intro"]
+    assert path("thinking", "reading") == ["thinking-to-writing", "writing-to-reading"]  # 两段直达比绕枢纽三段短
+    clip = direct.clips[-2]
+    assert g.start_node(clip) == "state:thinking" and g.end_node(clip) == "state:writing"
+
+
+def test_direct_must_join_loop_states() -> None:
+    bad = dataclasses.replace(BASE, clips=[*BASE.clips, Clip("x", "direct", "x.avif", None, "thinking", "error")])
+    assert any("直达过渡 x" in e for e in validate_manifest(bad))
 
 
 def test_every_state_reaches_every_other() -> None:

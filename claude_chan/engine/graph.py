@@ -1,6 +1,7 @@
 """枢纽图与路径规划。
 
-节点是 "hub:A" 这样的枢纽和 "state:thinking" 这样的状态，边是 intro / outro / transition 片段。
+节点是 "hub:A" 这样的枢纽和 "state:thinking" 这样的状态，边是 intro / outro / transition / direct 片段。
+direct 是两个状态之间的直达过渡（不经过枢纽），路径按片段数最短，有直达就走直达。
 loop 不是边，它让显示停留在节点上。
 """
 
@@ -32,6 +33,8 @@ class Graph:
                 frm, to = self.node_of_state(c.state or ""), hub_node(c.to or "")
             elif c.type == "transition":
                 frm, to = hub_node(c.frm or ""), hub_node(c.to or "")
+            elif c.type == "direct":
+                frm, to = self.node_of_state(c.frm or ""), self.node_of_state(c.to or "")
             else:
                 continue
             self._edges.setdefault(frm, []).append((c, to))
@@ -47,7 +50,17 @@ class Graph:
         """片段播完后所处的节点。loop 和事件停在它所属状态的节点上。"""
         if clip.type in ("loop", "event", "intro"):
             return self.node_of_state(clip.state or "")
+        if clip.type == "direct":
+            return self.node_of_state(clip.to or "")
         return hub_node(clip.to or "")
+
+    def start_node(self, clip: Clip) -> str:
+        """片段开始时所处的节点。"""
+        if clip.type in ("loop", "event", "outro"):
+            return self.node_of_state(clip.state or "")
+        if clip.type == "direct":
+            return self.node_of_state(clip.frm or "")
+        return hub_node(clip.frm or "")
 
     def rest_loop(self, node: str, target_state: str, random: Callable[[], float] = _random.random) -> Clip | None:
         """在节点上停留时播放的 loop（idle 的 loop 挂在枢纽 A 上）；一次性状态和枢纽 B 返回 None。

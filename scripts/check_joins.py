@@ -20,10 +20,7 @@ g = Graph(m)
 frames = {c.id: decode(A / c.file) for c in m.clips}
 clips = {c.id: c for c in m.clips}
 
-def start_node(c):
-    if c.type in ("loop", "event", "outro"):
-        return g.node_of_state(c.state)
-    return f"hub:{c.frm}"  # intro / transition 从枢纽出发
+start_node = g.start_node
 
 # 两段能连着播：前一段的结束节点 == 后一段的起始节点
 pairs = [(a, b) for a in m.clips for b in m.clips if g.end_node(a) == start_node(b)

@@ -85,6 +85,11 @@ def neighbors(manifest: dict, file: Path, as_state: str | None) -> list[tuple[st
                 out.append((f"{c['id']} 末帧", master(c["file"]), "last"))
             if c["type"] in ("intro", "transition") and c.get("from") == d["hub"]:
                 out.append((f"{c['id']} 首帧", master(c["file"]), "first"))
+        if c["type"] == "direct":
+            if c.get("to") == state:
+                out.append((f"{c['id']} 末帧", master(c["file"]), "last"))
+            if c.get("from") == state:
+                out.append((f"{c['id']} 首帧", master(c["file"]), "first"))
         elif c.get("state") == state:
             if c["type"] == "intro":
                 out.append((f"{c['id']} 末帧", master(c["file"]), "last"))
