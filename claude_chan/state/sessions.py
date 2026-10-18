@@ -15,11 +15,13 @@ from __future__ import annotations
 import json
 import math
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Callable
 
 from ..model import DisplayTarget, Scheduler, SessionView
+from .ask import Ask, describe
 from .mapper import map_event, project_of, source_of
+from .transcript import last_assistant_text
 
 # 工具返回里的后台任务编号（Claude Code 的输出格式，变了就只能靠 waitingMaxMs 兜底）
 _BACKGROUND_STARTED = [
@@ -53,6 +55,9 @@ class _Session:
     post_timer: Any = None
     complete_timer: Any = None  # complete / waiting 到时回到 idle
     background: set[str] = field(default_factory=set)  # 还没结束的后台任务编号
+    ask: Ask | None = None  # 等你确认时 Claude 具体想做什么
+    hook_pid: int = 0
+    transcript: str | None = None
 
 
 @dataclass
@@ -103,6 +108,8 @@ class SessionStore:
             s.cwd, s.source, s.project = cwd, source_of(cwd), project_of(cwd)
         s.last_event_at = now
         s.last_event = label
+        s.transcript = e.get("transcript_path") or s.transcript
+        s.hook_pid = e.get("_hook_pid") or s.hook_pid
         note = self._track_background(s, e)
 
         if action.kind == "base":
@@ -110,6 +117,8 @@ class SessionStore:
             if action.clear_latch:
                 self._clear_latch(s)
             self._set_base(s, action.state or "idle")
+            if action.state == "confirmation":
+                self._update_ask(s, e)
         elif action.kind == "postTool":
             self._cancel_post(s)
             ms = self._timing["postToolDebounceMs"]
@@ -251,6 +260,7 @@ class SessionStore:
         self._drowsy_seq = None
         if best is None:
             return DisplayTarget("idle", self._idle_seq)
+        waiting = state == "confirmation"
         return DisplayTarget(
             state,
             best.latch.seq if best.latch else best.base_seq,
@@ -258,6 +268,11 @@ class SessionStore:
             project=best.project,
             source=best.source,
             session_id=best.id,
+            ask=best.ask if waiting else None,
+            others_waiting=sum(1 for s in self._sessions.values() if s is not best and self._effective(s) == "confirmation")
+            if waiting else 0,
+            hook_pid=best.hook_pid,
+            transcript=best.transcript,
         )
 
     def dispose(self) -> None:
@@ -291,6 +306,15 @@ class SessionStore:
         self._clear_latch(s)
         self._sessions.pop(s.id, None)
 
+    def _update_ask(self, s: _Session, e: dict[str, Any]) -> None:
+        """进入或停在 confirmation：记下 Claude 具体想做什么。permission_prompt 通知没有新信息，保留之前的。"""
+        ask = describe(e)
+        if ask is None:
+            if s.ask is not None:
+                return
+            ask = Ask("等你确认")
+        s.ask = replace(ask, say=last_assistant_text(e.get("transcript_path")))
+
     def _effective(self, s: _Session) -> str:
         return s.latch.state if s.latch else s.base
 
@@ -303,6 +327,8 @@ class SessionStore:
         s.base = state
         s.base_seq = self.next_seq()
         s.changed_at = self.clock.now()
+        if state != "confirmation":
+            s.ask = None
 
     def _set_latch(self, s: _Session, sticky: bool) -> None:
         self._clear_latch(s)

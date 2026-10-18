@@ -51,14 +51,6 @@ def test_mask_follows_character(window) -> None:
     assert not mask.contains(window.rect().topLeft() + window.rect().center() * 0.2)  # 头顶透明区域
 
 
-def test_bubble_is_added_to_mask_and_removed_again(window) -> None:
-    window.set_target(DisplayTarget("confirmation", 1, project="demo", source="wsl"))
-    rect = window._bubble_layout()[0]
-    assert window.mask().contains(rect.center().toPoint())  # 气泡不会被裁掉
-    window.set_target(DisplayTarget("thinking", 2))
-    assert not window.mask().contains(rect.center().toPoint())  # 气泡消失后恢复穿透
-
-
 def test_player_pauses_while_hidden(window) -> None:
     window._player.paused.clear()
     window.hide()

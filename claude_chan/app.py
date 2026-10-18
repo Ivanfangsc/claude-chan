@@ -34,6 +34,9 @@ from .server import HookServer
 from .state.sessions import SessionStore
 from .state.target import TargetHub
 from .settings import SettingsBackend, SettingsDialog
+from . import jump
+from .bubble import Bubble, content_of
+from .state.transcript import session_title
 from .tray import PetTray
 from .updates import UpdateChecker
 from .window import PetWindow, build_hit_grid
@@ -121,6 +124,9 @@ class PetApp:
         self.window.set_sway(self.config["animation"]["swayDegrees"], self.config["animation"]["swayPeriodMs"])
         self.engine = self._make_engine()
         self.follower = Follower(self.window, self.config["window"].get("followProcesses", ["claude.exe"]), self.log)
+        self.bubble = Bubble(self.window)
+        self.bubble.clicked.connect(self._jump_to_waiting)
+        self._bubble_target: DisplayTarget | None = None
         self._icon = QIcon(str(root / "resources" / "icon.png"))
         self.settings_dialog: SettingsDialog | None = None
         self.tray = PetTray(
@@ -147,6 +153,7 @@ class PetApp:
         self.sweeper.timeout.connect(self.sessions.sweep)
         self.sweeper.timeout.connect(self._check_fullscreen)
         self.sweeper.timeout.connect(self.follower.poll)
+        self.sweeper.timeout.connect(self._update_bubble)  # 她被藏起来、又出来时跟着藏 / 出来
         self.sweeper.start()
         self._fullscreen_hidden = False
         self.sessions.sweep()
@@ -236,6 +243,8 @@ class PetApp:
                     fidgets=(lambda: "fidget" not in self.config["animation"].get("disabledEventGroups", []), self._set_fidgets),
                     autostart=(autostart.is_enabled, autostart.set_enabled),
                     check_updates=(lambda: self.config.get("updates", {}).get("check", True), self._set_check_updates),
+                    bubble=(lambda: self.config.get("bubble", {}).get("enabled", True), self._set_bubble),
+                    bubble_commands=(lambda: self.config.get("bubble", {}).get("showCommands", False), self._set_bubble_commands),
                     reset_geometry=w.reset_geometry,
                     open_data_folder=lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(config_path().parent))),
                     reload_config=self.reload_config,
@@ -274,6 +283,50 @@ class PetApp:
         self._save_setting(["animation", "disabledEventGroups"], groups)
         self.engine.set_config(self.config["animation"])
         self.log(f"随机小动作：{'开' if on else '关'}")
+
+    def _set_bubble(self, on: bool) -> None:
+        self._save_setting(["bubble", "enabled"], on)
+        self._update_bubble()
+        if self.settings_dialog:
+            self.settings_dialog.refresh()
+
+    def _set_bubble_commands(self, on: bool) -> None:
+        self._save_setting(["bubble", "showCommands"], on)
+        self._update_bubble()
+
+    # ---------- 等你确认的气泡 ----------
+
+    def _session_title(self, t: DisplayTarget) -> str | None:
+        """气泡里认出是哪个会话：桌面版用侧边栏标题，命令行用这个会话里问的第一句话。"""
+        found = jump.desktop_sessions().get(t.session_id or "")
+        if found and found[1]:
+            return found[1]
+        return session_title(t.transcript)
+
+    def _update_bubble(self) -> None:
+        t = self._bubble_target
+        cfg = self.config.get("bubble", {})
+        if not t or t.state != "confirmation" or not cfg.get("enabled", True) or not self.window.isVisible():
+            self.bubble.show_content(None)
+            return
+        self.bubble.show_content(content_of(t, self._session_title(t), cfg.get("showCommands", False)))
+
+    def _jump_to_waiting(self) -> None:
+        """点气泡：桌面版的会话直接打开；命令行的会话把它所在的终端 / VS Code 窗口切到前面。"""
+        t = self._bubble_target
+        if not t:
+            return
+        found = jump.desktop_sessions().get(t.session_id or "")
+        if found and jump.open_desktop_session(found[0]):
+            self.log(f"打开桌面版会话：{found[1] or found[0]}")
+            return
+        hwnd = jump.window_of_process(t.hook_pid) if t.hook_pid else 0
+        if not hwnd:
+            hwnd = jump.window_of_exe(("windowsterminal.exe", "claude.exe"))
+        if jump.activate(hwnd):
+            self.log("切到等你确认的那个窗口")
+        else:
+            self.log("没找到等你确认的那个窗口")
 
     def _set_check_updates(self, on: bool) -> None:
         self._save_setting(["updates", "check"], on)
@@ -357,6 +410,9 @@ class PetApp:
             self.engine.set_target(t)
         if hasattr(self, "window"):
             self.window.set_target(t)
+        if hasattr(self, "bubble"):
+            self._bubble_target = t
+            self._update_bubble()
         if hasattr(self, "tray"):
             self.tray.show_target(t)
 

@@ -14,7 +14,7 @@ from typing import Callable
 
 from PIL import Image
 from PySide6.QtCore import QPoint, QRect, QRectF, Qt, QTimer
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QGuiApplication, QImage, QPainter, QPainterPath, QRegion
+from PySide6.QtGui import QGuiApplication, QImage, QPainter, QRegion
 from PySide6.QtWidgets import QWidget
 
 from .config import data_dir
@@ -26,7 +26,6 @@ ASPECT = 16 / 9
 MIN_WIDTH = 120
 MIN_VISIBLE = 80  # 窗口至少要有这么多像素露在某个屏幕里，否则认为保存的位置已失效
 GRID_W, GRID_H = 64, 114
-SOURCE_LABEL = {"wsl": "WSL", "windows": "Win"}
 
 
 def build_hit_grid(keyframes: list[Path], log: Callable[[str], None]) -> list[list[bool]] | None:
@@ -216,11 +215,7 @@ class PetWindow(QWidget):
         self._on_state_change()
 
     def set_target(self, t: DisplayTarget) -> None:
-        old = self._bubble_layout()
         self._target = t
-        if self._bubble_layout() != old:
-            self._apply_mask()  # 气泡在角色轮廓外面，出现或消失时要调整窗口形状，否则会被裁掉
-        self.update()
 
     def prepare_quit(self) -> None:
         self._quitting = True
@@ -234,15 +229,11 @@ class PetWindow(QWidget):
         self._apply_mask()
 
     def _apply_mask(self) -> None:
-        """窗口形状 = 角色轮廓 ∪ 气泡。setMask 既决定点击区域，也会裁掉形状以外的绘制。"""
+        """窗口形状 = 角色轮廓。setMask 既决定点击区域，也会裁掉形状以外的绘制（气泡是单独的窗口，见 bubble.py）。"""
         if not self._hit_test or self._hit_grid is None:
             self.clearMask()
             return
-        region = QRegion(self._char_region)
-        bubble = self._bubble_layout()
-        if bubble:
-            region = region.united(QRegion(bubble[0].adjusted(-2, -2, 2, 10).toAlignedRect()))
-        self.setMask(region)
+        self.setMask(QRegion(self._char_region))
 
     def _character_region(self) -> QRegion:
         region = QRegion()
@@ -355,50 +346,4 @@ class PetWindow(QWidget):
         else:
             p.drawImage(target, current)
         p.restore()
-        self._paint_bubble(p)
         p.end()
-
-    def _bubble_layout(self) -> tuple[QRectF, str, str] | None:
-        """confirmation 气泡的位置、来源标签和文字；不显示气泡时返回 None。"""
-        t = self._target
-        if not t or t.state != "confirmation" or not t.project:
-            return None
-        fm = QFontMetrics(self._bubble_font())
-        tag = SOURCE_LABEL.get(t.source or "", "")
-        text = f"{t.project} 在等你确认"
-        tag_w = fm.horizontalAdvance(tag) + 10 if tag else 0
-        w = min(self.width() * 0.9, tag_w + fm.horizontalAdvance(text) + 24)
-        h = fm.height() + 12
-        return QRectF((self.width() - w) / 2, self.height() * 0.06, w, h), tag, text
-
-    @staticmethod
-    def _bubble_font() -> QFont:
-        font = QFont("Microsoft YaHei UI", 10)
-        font.setBold(True)
-        return font
-
-    def _paint_bubble(self, p: QPainter) -> None:
-        """confirmation 时在角色头顶显示是哪个项目在等确认。"""
-        layout = self._bubble_layout()
-        if not layout:
-            return
-        rect, tag, text = layout
-        p.setFont(self._bubble_font())
-        fm = p.fontMetrics()
-        tag_w = fm.horizontalAdvance(tag) + 10 if tag else 0
-        x, y, w, h = rect.x(), rect.y(), rect.width(), rect.height()
-        path = QPainterPath()
-        path.addRoundedRect(QRectF(x, y, w, h), 12, 12)
-        path.moveTo(self.width() / 2 - 6, y + h)
-        path.lineTo(self.width() / 2, y + h + 6)
-        path.lineTo(self.width() / 2 + 6, y + h)
-        p.fillPath(path, QColor(255, 255, 255, 240))
-        cx = x + 12
-        if tag:
-            p.fillRect(QRectF(cx, y + 6, tag_w - 4, h - 12), QColor("#d97757"))
-            p.setPen(QColor("white"))
-            p.drawText(QRectF(cx, y, tag_w - 4, h), Qt.AlignmentFlag.AlignCenter, tag)
-            cx += tag_w
-        p.setPen(QColor("#3d2b1f"))
-        elided = fm.elidedText(text, Qt.TextElideMode.ElideRight, int(x + w - 12 - cx))
-        p.drawText(QRectF(cx, y, x + w - cx, h), Qt.AlignmentFlag.AlignVCenter, elided)

@@ -39,6 +39,8 @@ class SettingsBackend:
     fidgets: Toggle
     autostart: Toggle
     check_updates: Toggle
+    bubble: Toggle
+    bubble_commands: Toggle
     reset_geometry: Callable[[], None]
     open_data_folder: Callable[[], None]
     reload_config: Callable[[], None]
@@ -90,6 +92,15 @@ class SettingsDialog(QDialog):
         reset = QPushButton("重置位置和大小")
         reset.clicked.connect(backend.reset_geometry)
         lay.addWidget(reset, alignment=Qt.AlignmentFlag.AlignLeft)
+        root.addWidget(box)
+
+        # ---------- 气泡 ----------
+        box = QGroupBox("气泡")
+        lay = QVBoxLayout(box)
+        self._bubble = self._check(lay, "等你确认时显示气泡", backend.bubble)
+        lay.addWidget(_hint("写着 Claude 想做什么、问你什么；点一下跳回那个会话。"))
+        self._bubble_commands = self._check(lay, "气泡里显示完整命令", backend.bubble_commands)
+        lay.addWidget(_hint("默认只显示 Claude 的说明和文件名。录屏、共享屏幕时，命令里的内容可能会露出来。"))
         root.addWidget(box)
 
         # ---------- 动画 ----------
@@ -153,6 +164,8 @@ class SettingsDialog(QDialog):
             (self._fidgets, b.fidgets[0]()),
             (self._autostart, b.autostart[0]()),
             (self._updates, b.check_updates[0]()),
+            (self._bubble, b.bubble[0]()),
+            (self._bubble_commands, b.bubble_commands[0]()),
         ]
         if self._follow and b.follow:
             pairs.append((self._follow, b.follow[0]()))
@@ -166,6 +179,7 @@ class SettingsDialog(QDialog):
             widget.setChecked(value)  # type: ignore[attr-defined]
             widget.blockSignals(False)
         self._top.setEnabled(not following)  # 跟随时层级由 Claude 窗口决定
+        self._bubble_commands.setEnabled(b.bubble[0]())
 
     def present(self) -> None:
         self.refresh()

@@ -239,6 +239,8 @@ D:/comfy/.venv/Scripts/python.exe scripts/export_frames.py   # webm → AVIF，�
 | `window.hitTest` | `true` | 角色周围的透明区域让点击穿透 |
 | `window.hideInFullscreen` | `true` | 同一屏幕上有全屏窗口（游戏、视频、演示）时自动隐藏，退出全屏后回来；桌宠隐藏时停止解码，不占 CPU。跟随 Claude 窗口时不用它（层级跟着宿主，全屏窗口自然会盖住） |
 | `window.followProcesses` | `["claude.exe"]` | “跟随 Claude 窗口”贴着这些进程的主窗口（进程名，不分大小写）；想贴终端可加 `windowsterminal.exe` |
+| `bubble.enabled` | `true` | 等你确认时在她头顶显示气泡（Claude 想做什么、问你什么），点击跳回那个会话：桌面版的会话用桌面版自己的链接直接打开，命令行的会话把所在的终端 / VS Code 窗口切到前面 |
+| `bubble.showCommands` | `false` | 气泡里显示完整命令；默认只显示 Claude 的说明和文件名 |
 | `updates.check` | `true` | 启动 10 秒后和之后每天读一次 GitHub Releases 的最新版本，比当前新时托盘通知 |
 | `updates.repo` | `"Ivanfangsc/claude-chan"` | 检查更新用的仓库 |
 | `debugPanel` | `false` | 打包版是否提供调试面板（托盘菜单“打开调试面板”、双击桌宠）；从源码运行时总是可用，`--debug` 启动也会打开 |

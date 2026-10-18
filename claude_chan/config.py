@@ -25,6 +25,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         # 托盘里打开“跟随 Claude 窗口”后，贴着这些进程的主窗口（Claude 桌面版）
         "followProcesses": ["claude.exe"],
     },
+    # 等你确认时她头顶的气泡：Claude 想做什么、问你什么；showCommands 为 true 时显示完整命令（录屏、共享屏幕时可能露出来）
+    "bubble": {"enabled": True, "showCommands": False},
     # 检查更新：启动 10 秒后和之后每天读一次 GitHub Releases 的最新版本，有新版本时托盘提示
     "updates": {"check": True, "repo": "Ivanfangsc/claude-chan"},
     # 调试面板（托盘菜单“打开调试面板”、双击桌宠）：从源码运行时总是可用，打包版默认隐藏，设为 true 打开

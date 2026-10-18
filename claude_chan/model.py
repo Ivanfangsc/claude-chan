@@ -23,6 +23,11 @@ class DisplayTarget:
     source: str | None = None
     session_id: str | None = None
     manual: bool = False
+    # confirmation 时 Claude 具体想做什么（state/ask.py 的 Ask），给气泡用
+    ask: Any = None
+    others_waiting: int = 0  # 另外还有几个会话也在等你
+    hook_pid: int = 0  # 发出请求的进程（CLI 会话点气泡时找回它的窗口）
+    transcript: str | None = None
 
 
 @dataclass

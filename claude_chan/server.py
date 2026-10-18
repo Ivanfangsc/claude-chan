@@ -14,7 +14,19 @@ from typing import Any, Callable
 
 from PySide6.QtCore import QObject, Signal
 
+from .jump import pid_of_client
+
 MAX_BODY = 1024 * 1024
+
+
+def _waiting(event: object) -> bool:
+    """会让会话进入“等你确认”的事件（PreToolUse 只算 Claude 主动问你和交计划这两种，别的工具调用不查，省时间）。"""
+    if not isinstance(event, dict):
+        return False
+    name = event.get("hook_event_name")
+    if name == "PreToolUse":
+        return event.get("tool_name") in ("AskUserQuestion", "ExitPlanMode")
+    return name in ("PermissionRequest", "Notification")
 
 
 class HookServer(QObject):
@@ -59,10 +71,18 @@ class HookServer(QObject):
                 if length > MAX_BODY:
                     return self._reply(413, {"error": "too large"})
                 raw = self.rfile.read(length)
-                self._reply(200)
                 try:
                     event = json.loads(raw.decode("utf-8"))
                 except ValueError:
+                    event = None
+                # 等你确认这类事件：趁连接还在，查出是哪个进程发来的（点气泡时用它找回终端窗口）
+                if _waiting(event):
+                    try:
+                        event["_hook_pid"] = pid_of_client(self.client_address[1], server._port)
+                    except OSError:
+                        pass
+                self._reply(200)
+                if event is None:
                     server.message.emit("收到无法解析的事件，已忽略")
                     return
                 if not isinstance(event, dict) or not isinstance(event.get("hook_event_name"), str):
