@@ -54,6 +54,9 @@ class UpdateChecker(QObject):
         QTimer.singleShot(10_000, self.check)
         self._timer.start()
 
+    def stop(self) -> None:
+        self._timer.stop()
+
     def check(self) -> None:
         if self._busy:
             return

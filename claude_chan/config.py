@@ -126,6 +126,25 @@ def deep_merge(base: Any, over: Any) -> Any:
     return out
 
 
+def save_user_setting(keys: list[str], value: Any) -> None:
+    """把一项设置写进 config.json：只改这一项，文件里其他手写的内容原样保留。
+    文件存在但解析不了时不覆盖它（以免冲掉用户写到一半的内容），抛出 ValueError。"""
+    path = config_path()
+    data: dict[str, Any] = {}
+    if path.exists():
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("config.json 的最外层不是对象")
+    node = data
+    for k in keys[:-1]:
+        if not isinstance(node.get(k), dict):
+            node[k] = {}
+        node = node[k]
+    node[keys[-1]] = value
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def load_config() -> tuple[dict[str, Any], str | None]:
     """读取并与默认值深度合并；文件有错时返回默认值和错误信息。"""
     defaults = copy.deepcopy(DEFAULT_CONFIG)

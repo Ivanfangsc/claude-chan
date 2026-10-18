@@ -19,8 +19,8 @@ from PySide6.QtGui import QDesktopServices, QIcon, QImage
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication
 
-from . import __version__, logfile
-from .config import config_path, data_dir, load_config
+from . import __version__, autostart, logfile
+from .config import config_path, data_dir, load_config, save_user_setting
 from .debug import DebugActions, DebugWindow
 from .engine.engine import Engine
 from .engine.graph import Graph
@@ -33,6 +33,7 @@ from .model import DisplayTarget, EngineStatus
 from .server import HookServer
 from .state.sessions import SessionStore
 from .state.target import TargetHub
+from .settings import SettingsBackend, SettingsDialog
 from .tray import PetTray
 from .updates import UpdateChecker
 from .window import PetWindow, build_hit_grid
@@ -113,26 +114,22 @@ class PetApp:
             self._placeholder(self.assets, self.manifest),
             self._grid(self.skin),
             self.config["window"]["widthFraction"],
-            on_state_change=lambda: self.tray.refresh() if hasattr(self, "tray") else None,
+            on_state_change=self._refresh_menus,
             on_menu=lambda pos: self.tray.popup(pos),
             on_open_debug=lambda: self.open_debug() if self.debug_enabled else None,
         )
         self.window.set_sway(self.config["animation"]["swayDegrees"], self.config["animation"]["swayPeriodMs"])
         self.engine = self._make_engine()
         self.follower = Follower(self.window, self.config["window"].get("followProcesses", ["claude.exe"]), self.log)
+        self._icon = QIcon(str(root / "resources" / "icon.png"))
+        self.settings_dialog: SettingsDialog | None = None
         self.tray = PetTray(
-            QIcon(str(root / "resources" / "icon.png")),
+            self._icon,
             self.window,
-            open_debug=self.open_debug if self.debug_enabled else None,
-            reload_config=self.reload_config,
-            open_config_folder=lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(config_path().parent))),
+            open_settings=self.open_settings,
             quit_app=self.quit,
-            skins=[(name, SKINS[name][0]) for name in self.available_skins()],
-            current_skin=lambda: self.skin,
-            switch_skin=self.switch_skin,
-            follow=(lambda: self.follower.enabled, self.follower.set_enabled) if self.follower.available else None,
+            open_debug=self.open_debug if self.debug_enabled else None,
             version=__version__,
-            switch_style=(lambda: self.switch_style, self.set_switch_style),
         )
 
         updates = self.config.get("updates", {})
@@ -221,6 +218,70 @@ class PetApp:
         except OSError as e:
             self.log(f"保存设置失败：{e}")
 
+    # ---------- 设置窗口 ----------
+
+    def open_settings(self) -> None:
+        if self.settings_dialog is None:
+            w = self.window
+            self.settings_dialog = SettingsDialog(
+                SettingsBackend(
+                    version=__version__,
+                    skins=[(name, SKINS[name][0]) for name in self.available_skins()],
+                    skin=(lambda: self.skin, self.switch_skin),
+                    always_on_top=(lambda: w.state["alwaysOnTop"], w.set_always_on_top),
+                    click_through=(lambda: w.state["clickThrough"], w.set_click_through),
+                    follow=(lambda: self.follower.enabled, self.follower.set_enabled) if self.follower.available else None,
+                    hide_in_fullscreen=(lambda: self.config["window"].get("hideInFullscreen", True), self._set_hide_in_fullscreen),
+                    switch_style=(lambda: self.switch_style, self.set_switch_style),
+                    fidgets=(lambda: "fidget" not in self.config["animation"].get("disabledEventGroups", []), self._set_fidgets),
+                    autostart=(autostart.is_enabled, autostart.set_enabled),
+                    check_updates=(lambda: self.config.get("updates", {}).get("check", True), self._set_check_updates),
+                    reset_geometry=w.reset_geometry,
+                    open_data_folder=lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(config_path().parent))),
+                    reload_config=self.reload_config,
+                ),
+                self._icon,
+            )
+        self.settings_dialog.present()
+
+    def _refresh_menus(self) -> None:
+        if hasattr(self, "tray"):
+            self.tray.refresh()
+        if getattr(self, "settings_dialog", None):
+            self.settings_dialog.refresh()
+
+    def _save_setting(self, keys: list[str], value: Any) -> None:
+        """改内存里的配置并写进 config.json；文件写不进去时只记日志，本次运行照样生效。"""
+        node = self.config
+        for k in keys[:-1]:
+            node = node.setdefault(k, {})
+        node[keys[-1]] = value
+        try:
+            save_user_setting(keys, value)
+        except (OSError, ValueError) as e:
+            self.log(f"保存设置失败（{config_path()}）：{e}")
+
+    def _set_hide_in_fullscreen(self, on: bool) -> None:
+        self._save_setting(["window", "hideInFullscreen"], on)
+        if not on and self._fullscreen_hidden:
+            self._fullscreen_hidden = False
+            self.window.show()
+
+    def _set_fidgets(self, on: bool) -> None:
+        groups = [g for g in self.config["animation"].get("disabledEventGroups", []) if g != "fidget"]
+        if not on:
+            groups.append("fidget")
+        self._save_setting(["animation", "disabledEventGroups"], groups)
+        self.engine.set_config(self.config["animation"])
+        self.log(f"随机小动作：{'开' if on else '关'}")
+
+    def _set_check_updates(self, on: bool) -> None:
+        self._save_setting(["updates", "check"], on)
+        if on:
+            self.updates.start()
+        else:
+            self.updates.stop()
+
     def set_switch_style(self, style: str) -> None:
         """切换方式：smooth 流畅优先 / responsive 响应优先。立即生效并记住。"""
         if style not in ("smooth", "responsive") or style == self.switch_style:
@@ -230,8 +291,7 @@ class PetApp:
         self.engine.set_config(self.config["animation"])
         self._save_app_state()
         self.log(f"切换方式：{'响应优先' if style == 'responsive' else '流畅优先'}")
-        if hasattr(self, "tray"):
-            self.tray.refresh()
+        self._refresh_menus()
 
     def switch_skin(self, name: str) -> None:
         """切换形象：立即换成新形象的素材和引擎，交叉淡化到新形象的 idle loop，再照常走向当前的目标状态。
@@ -252,8 +312,7 @@ class PetApp:
         else:
             self.engine.start()
         self.log(f"已切换到{SKINS[name][0]}")
-        if hasattr(self, "tray"):
-            self.tray.refresh()
+        self._refresh_menus()
 
     # ---------- 全屏时让开 ----------
 
@@ -390,6 +449,7 @@ class PetApp:
         self.window.set_sway(config["animation"]["swayDegrees"], config["animation"]["swayPeriodMs"])
         self.window.set_hit_test(config["window"]["hitTest"])
         self.log(f"已重新加载配置：{config_path()}{'（server 的修改需要重启桌宠才生效）' if server_changed else ''}")
+        self._refresh_menus()
 
     def quit(self) -> None:
         self.log("退出")

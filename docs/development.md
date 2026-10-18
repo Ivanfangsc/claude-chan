@@ -47,7 +47,7 @@ uv run claude-chan            # 加 --debug 同时打开调试面板
 
 ### 然后
 
-1. 在托盘菜单里勾选 **开机自启**：Windows 写注册表 Run 键（直接运行时用 pythonw 启动，不弹命令行窗口），macOS 写 LaunchAgent，Linux 写 `~/.config/autostart`。插件的 hook 在桌宠没开时每次最多等 0.2 秒（见[下文](#桌宠没开时会怎样)），所以建议让桌宠一直开着。
+1. 在设置窗口里勾选 **开机自启**：Windows 写注册表 Run 键（直接运行时用 pythonw 启动，不弹命令行窗口），macOS 写 LaunchAgent，Linux 写 `~/.config/autostart`。插件的 hook 在桌宠没开时每次最多等 0.2 秒（见[下文](#桌宠没开时会怎样)），所以建议让桌宠一直开着。
 2. 按下一节把插件指向本地仓库，或者按 README 从 GitHub 安装。
 
 ## 插件的工作方式
@@ -127,7 +127,7 @@ confirmation > error > 工作中（writing / reading / thinking）> complete > i
 
 素材全部是 9:16 透明素材，由 `resources/assets/manifest.json` 描述，代码里不写死任何文件名。
 
-**形象**：每个形象是一套独立的素材目录，结构完全相同——原版 `resources/assets/`，Q 版（冷脸萌三头身）`resources/assets-chibi/`。托盘菜单“形象”里切换，选择保存在数据目录的 `app-state.json`。切换时先回到 idle，这一轮播完后播变身动画（manifest 的 `switch` 字段登记，首帧是本形象的 idle、末帧是目标形象的 idle），变身一开始就换成新形象的动画引擎，播完无缝接上；切换期间照常接收事件，切完显示最新的状态。Q 版的 error 是专属的“抱头蹲防”。
+**形象**：每个形象是一套独立的素材目录，结构完全相同——原版 `resources/assets/`，Q 版（冷脸萌三头身）`resources/assets-chibi/`。设置窗口的“形象”里切换，选择保存在数据目录的 `app-state.json`。切换时先回到 idle，这一轮播完后播变身动画（manifest 的 `switch` 字段登记，首帧是本形象的 idle、末帧是目标形象的 idle），变身一开始就换成新形象的动画引擎，播完无缝接上；切换期间照常接收事件，切完显示最新的状态。Q 版的 error 是专属的“抱头蹲防”。
 
 - 关键帧 PNG（1026×1824）：每个状态和两个枢纽各一张。它们用于启动时的占位画面，以及计算点击穿透的命中区域。
 - 透明动画 AVIF（540×960，24fps），manifest 里登记的就是它们；同名的 VP9 + Alpha WebM（774×1376）是生成时的原始文件，用 `scripts/export_frames.py` 转换：
@@ -218,7 +218,7 @@ D:/comfy/.venv/Scripts/python.exe scripts/export_frames.py   # webm → AVIF，�
 
 ## 配置项
 
-配置文件是程序文件夹下的 `data\config.json`（打包版在 `ClaudeChan.exe` 旁边，从源码运行在仓库根目录；托盘菜单“打开配置文件夹”）。窗口位置 `window-state.json`、形象选择 `app-state.json`、日志 `log.txt` 也在这里，不写任何系统目录。文件里只需要写想覆盖的键，其余用默认值。对象会逐键合并，**数组会整体替换**。修改后在托盘点“重新加载配置”，只有 `server` 的修改需要重启桌宠。
+配置文件是程序文件夹下的 `data\config.json`（打包版在 `ClaudeChan.exe` 旁边，从源码运行在仓库根目录；设置窗口底部“打开数据文件夹”）。窗口位置 `window-state.json`、形象选择 `app-state.json`、日志 `log.txt` 也在这里，不写任何系统目录。文件里只需要写想覆盖的键，其余用默认值。对象会逐键合并，**数组会整体替换**。修改后在设置窗口点“重新加载 config.json”，只有 `server` 的修改需要重启桌宠。
 
 例：让桌宠 1 分钟没事件就打瞌睡，并把 `Bash` 算作读文件：
 
@@ -253,7 +253,7 @@ D:/comfy/.venv/Scripts/python.exe scripts/export_frames.py   # webm → AVIF，�
 | `animation.eventChance` | `0.25` | 每播完一轮 loop 改播随机事件的概率（manifest 里事件自己写了 `chance` 时以它为准）；`0` 关闭 |
 | `animation.eventCooldownMs` | `60000` | 同一组随机事件之间至少间隔（事件自己写了 `cooldownMs` 时以它为准）；启动和每次换状态时重新计时 |
 | `animation.disabledEventGroups` | `[]` | 不触发这些组的随机事件：`"blink"` 为眨眼，`"fidget"` 为其他动作（没写 `group` 的事件） |
-| `animation.switchStyle` | `"smooth"` | 切换方式。`smooth` 流畅优先：随机事件和 loop 播完这一段再走，只有 `highPriority` 立即交叉淡化；`responsive` 响应优先：随机事件和所有 loop 都立即交叉淡化离开。托盘菜单“切换方式”里改的就是它，选择保存在 `data\app-state.json`，优先于配置文件 |
+| `animation.switchStyle` | `"smooth"` | 切换方式。`smooth` 流畅优先：随机事件和 loop 播完这一段再走，只有 `highPriority` 立即交叉淡化；`responsive` 响应优先：随机事件和所有 loop 都立即交叉淡化离开。设置窗口的“切换方式”改的就是它，选择保存在 `data\app-state.json`，优先于配置文件 |
 | `animation.loopRateJitter` | `0.06` | 每一轮 loop 的播放速度在 1 ± 这个比例之间随机 |
 | `animation.swayDegrees` | `0` | 绘制时整体左右摇晃的最大角度（绕画面底部中点旋转）；`0` 关闭 |
 | `animation.swayPeriodMs` | `5000` | 摇晃的周期（叠加一条周期约 1.6 倍的正弦，不会完全重复） |
@@ -314,7 +314,8 @@ uv run pyinstaller claude-chan.spec --noconfirm  # 打包到 dist/ClaudeChan/
 plugin/                           Claude Code 插件（hooks.json）
 claude_chan/                      桌宠
   app.py                          入口：把各模块连起来
-  window.py / tray.py / debug.py  桌宠窗口、托盘、调试面板
+  window.py / tray.py / debug.py  桌宠窗口、托盘菜单、调试面板
+  settings.py                     设置窗口（形象、窗口、动画、启动与更新）；改动写进 config.json / app-state.json
   follow.py / follower.py         跟随 Claude 窗口（Win32 窗口事件与 owner；找宿主、贴角、记住相对位置）
   fullscreen.py                   全屏检测
   updates.py / logfile.py         检查更新（GitHub Releases）、日志文件（data\log.txt，含未捕获的异常）
