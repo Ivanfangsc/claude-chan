@@ -91,8 +91,13 @@ class PetApp:
         if config_error:
             self.log(config_error)
         self._app_state_file = data_dir() / "app-state.json"
-        saved = self._load_app_state().get("skin", "adult")
+        app_state = self._load_app_state()
+        saved = app_state.get("skin", "adult")
         self.skin = saved if saved in self.available_skins() else "adult"
+        self.switch_style = app_state.get("switchStyle", self.config["animation"].get("switchStyle", "smooth"))
+        self.config["animation"]["switchStyle"] = self.switch_style
+        # 调试面板：源码运行时总是可用；打包版只在配置 debugPanel 为 true 或带 --debug 启动时可用
+        self.debug_enabled = (not getattr(sys, "frozen", False)) or bool(self.config.get("debugPanel")) or open_debug
         self.assets, self.manifest = self._load_skin(self.skin)
         self._grids: dict[str, list[list[bool]] | None] = {}  # 各形象的点击区域，启动时算好，切换时不卡
 
@@ -110,7 +115,7 @@ class PetApp:
             self.config["window"]["widthFraction"],
             on_state_change=lambda: self.tray.refresh() if hasattr(self, "tray") else None,
             on_menu=lambda pos: self.tray.popup(pos),
-            on_open_debug=self.open_debug,
+            on_open_debug=lambda: self.open_debug() if self.debug_enabled else None,
         )
         self.window.set_sway(self.config["animation"]["swayDegrees"], self.config["animation"]["swayPeriodMs"])
         self.engine = self._make_engine()
@@ -118,7 +123,7 @@ class PetApp:
         self.tray = PetTray(
             QIcon(str(root / "resources" / "icon.png")),
             self.window,
-            open_debug=self.open_debug,
+            open_debug=self.open_debug if self.debug_enabled else None,
             reload_config=self.reload_config,
             open_config_folder=lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(config_path().parent))),
             quit_app=self.quit,
@@ -127,6 +132,7 @@ class PetApp:
             switch_skin=self.switch_skin,
             follow=(lambda: self.follower.enabled, self.follower.set_enabled) if self.follower.available else None,
             version=__version__,
+            switch_style=(lambda: self.switch_style, self.set_switch_style),
         )
 
         updates = self.config.get("updates", {})
@@ -209,9 +215,23 @@ class PetApp:
     def _save_app_state(self) -> None:
         try:
             self._app_state_file.parent.mkdir(parents=True, exist_ok=True)
-            self._app_state_file.write_text(json.dumps({"skin": self.skin}), encoding="utf-8")
+            self._app_state_file.write_text(
+                json.dumps({"skin": self.skin, "switchStyle": self.switch_style}), encoding="utf-8"
+            )
         except OSError as e:
-            self.log(f"保存形象选择失败：{e}")
+            self.log(f"保存设置失败：{e}")
+
+    def set_switch_style(self, style: str) -> None:
+        """切换方式：smooth 流畅优先 / responsive 响应优先。立即生效并记住。"""
+        if style not in ("smooth", "responsive") or style == self.switch_style:
+            return
+        self.switch_style = style
+        self.config["animation"]["switchStyle"] = style
+        self.engine.set_config(self.config["animation"])
+        self._save_app_state()
+        self.log(f"切换方式：{'响应优先' if style == 'responsive' else '流畅优先'}")
+        if hasattr(self, "tray"):
+            self.tray.refresh()
 
     def switch_skin(self, name: str) -> None:
         """切换形象：立即换成新形象的素材和引擎，交叉淡化到新形象的 idle loop，再照常走向当前的目标状态。
@@ -361,6 +381,8 @@ class PetApp:
             self.log(error)
             return
         server_changed = config["server"] != self.config["server"]
+        config["animation"]["switchStyle"] = self.switch_style  # 托盘里选的切换方式优先于配置文件
+        self.debug_enabled = self.debug_enabled or bool(config.get("debugPanel"))
         self.config = config
         self.sessions.set_config(config["state"])
         self.player.set_config(config["animation"])
@@ -403,7 +425,8 @@ def main() -> None:
         if conn:
             conn.close()
         pet.window.show()
-        pet.open_debug()
+        if pet.debug_enabled:
+            pet.open_debug()
 
     instance.newConnection.connect(on_second_instance)
     sys.exit(app.exec())

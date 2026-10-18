@@ -27,6 +27,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     },
     # 检查更新：启动 10 秒后和之后每天读一次 GitHub Releases 的最新版本，有新版本时托盘提示
     "updates": {"check": True, "repo": "Ivanfangsc/claude-chan"},
+    # 调试面板（托盘菜单“打开调试面板”、双击桌宠）：从源码运行时总是可用，打包版默认隐藏，设为 true 打开
+    "debugPanel": False,
     # 素材目录（包含 manifest.json）；None 表示使用内置素材
     "assetsDir": None,
     "animation": {
@@ -53,8 +55,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
         # 整体轻轻左右摇晃（绕画面底部中点旋转，最大角度，0 关闭）；由两条周期不成整数比的正弦叠加，不会重复
         "swayDegrees": 0,
         "swayPeriodMs": 5000,
-        # 事件比 loop 长，默认可以随时打断（交叉淡化离开），不拖慢状态切换
-        "interruptibleEvents": True,
+        # 切换方式（托盘菜单里可以改，选择保存在 data\app-state.json）：
+        #   "smooth"     流畅优先：随机小动作和工作状态的 loop 播完再走，只有 highPriority（等你确认、出错）立即打断
+        #   "responsive" 响应优先：小动作和所有 loop 都立即交叉淡化离开，最快，但偶尔会看到动作被掐断
+        # 两种方式下 interruptibleLoops 里的状态（待机、打瞌睡）都一有动静就立即离开
+        "switchStyle": "smooth",
         # 每一轮 loop 的播放速度在 1 ± 这个比例之间随机，呼吸节奏不会一成不变
         "loopRateJitter": 0.06,
     },

@@ -347,19 +347,46 @@ def test_switching_between_loop_and_event_does_not_crossfade() -> None:
     assert r.player.crossfades == []
 
 
-def test_events_can_be_interrupted() -> None:
+def test_smooth_lets_events_finish() -> None:
+    """流畅优先（默认）：随机小动作播完再走。"""
     r = Rig(WITH_EVENTS, random=lambda: 0.0, eventChance=1, eventCooldownMs=0)
+    assert r.player.playing.id == "idle-yawn"
+    r.engine.set_target(t("thinking"))
+    assert r.player.crossfades == []
+    assert r.run(1) == ["thinking-intro"]
+
+
+def test_smooth_still_interrupts_events_for_urgent_targets() -> None:
+    """流畅优先下，等你确认、出错仍然立即打断小动作。"""
+    r = Rig(WITH_EVENTS, random=lambda: 0.0, eventChance=1, eventCooldownMs=0)
+    assert r.player.playing.id == "idle-yawn"
+    r.engine.set_target(t("confirmation"))
+    assert r.player.crossfades == ["confirmation-intro"]
+
+
+def test_responsive_interrupts_events() -> None:
+    r = Rig(WITH_EVENTS, random=lambda: 0.0, eventChance=1, eventCooldownMs=0, switchStyle="responsive")
     assert r.player.playing.id == "idle-yawn"
     r.engine.set_target(t("thinking"))
     assert r.player.crossfades == ["thinking-intro"]
     assert r.engine.status().current == "thinking-intro"
 
 
-def test_events_wait_when_not_interruptible() -> None:
-    r = Rig(WITH_EVENTS, random=lambda: 0.0, eventChance=1, interruptibleEvents=False)
+def test_responsive_interrupts_work_loops() -> None:
+    """响应优先：工作状态的 loop 也不等这一轮播完。"""
+    r = Rig(crossfadeMs=150)
     r.engine.set_target(t("thinking"))
-    assert r.player.crossfades == []
-    assert r.run(1) == ["thinking-intro"]
+    r.run(2)
+    assert r.player.playing.id == "thinking-loop"
+    r.engine.set_target(t("idle"))
+    assert r.player.crossfades == []  # 流畅优先：等这一轮
+    r2 = Rig(crossfadeMs=150, switchStyle="responsive")
+    r2.engine.set_target(t("thinking"))
+    r2.run(1)
+    r2.player.finish()
+    assert r2.player.playing.id == "thinking-loop"
+    r2.engine.set_target(t("idle"))
+    assert r2.player.crossfades[-1] == "thinking-outro"
 
 
 # ---------- 按事件设置概率和冷却、loop 速度浮动 ----------

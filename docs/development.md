@@ -118,7 +118,7 @@ confirmation > error > 工作中（writing / reading / thinking）> complete > i
 - 枢纽 A（坐着，书合上）就是 idle；枢纽 B（书摊开）只是过渡姿势。thinking、confirmation、complete、error、drowsy 挂在 A 上，reading、writing 挂在 B 上。
 - 切换状态时在枢纽图上找最短路径（片段数最少），按顺序播放沿途片段。例如 complete → writing 依次播 complete 退出、A→B、writing 进入、writing 循环。
 - **直达过渡**：thinking、reading、writing 三者之间有直接的过渡片段（`direct`），不经过枢纽，例如 thinking → writing 只播一段 `thinking-to-writing`（原来要绕退出、A→B、进入三段，约 15 秒）。路径长度相同时优先走原来经过枢纽的路线，不会为了凑路线路过别的状态。某一对没有直达片段时（比如 Q 版的 reading → writing）照旧绕枢纽。
-- intro、outro、过渡一旦开始必须播完；loop 播完这一轮再离开。以下几种情况会用约 150ms 的交叉淡化立即离开：目标是 confirmation 或 error；当前是 idle 或 drowsy 的 loop（一有动静就“回过神来”）；当前在播随机事件。
+- intro、outro、过渡一旦开始必须播完；loop 播完这一轮再离开。以下几种情况会用约 150ms 的交叉淡化立即离开：目标是 confirmation 或 error；当前是 idle 或 drowsy 的 loop（一有动静就“回过神来”）；切换方式是“响应优先”（随机事件和所有 loop 都不等）。默认的“流畅优先”下，随机事件会播完再走。
 - **loop 变体**：一个状态可以有多段 loop（`idle-loop`、`idle-loop-2`……），每轮随机换一段，不连续重复同一段。
 - **随机事件**：停在某个状态时，每播完一轮 loop，以 25% 的概率改播一段该状态的事件（比如 idle 打哈欠、张望，thinking 敲下巴，drowsy 惊醒），两次事件之间至少隔 60 秒。事件和 loop 一样首尾是该状态的关键帧，播完自然回到 loop。
 - 衔接无缝：逐帧解码 AVIF 画到窗口上，换片段只是换一个帧序列，下一段在当前段播完前就准备好了，不会出现空帧或闪烁。每段末帧等于下一段首帧，所以下一段从第 2 帧开始播，避免同一画面停两帧。
@@ -241,9 +241,10 @@ D:/comfy/.venv/Scripts/python.exe scripts/export_frames.py   # webm → AVIF，�
 | `window.followProcesses` | `["claude.exe"]` | “跟随 Claude 窗口”贴着这些进程的主窗口（进程名，不分大小写）；想贴终端可加 `windowsterminal.exe` |
 | `updates.check` | `true` | 启动 10 秒后和之后每天读一次 GitHub Releases 的最新版本，比当前新时托盘通知 |
 | `updates.repo` | `"Ivanfangsc/claude-chan"` | 检查更新用的仓库 |
+| `debugPanel` | `false` | 打包版是否提供调试面板（托盘菜单“打开调试面板”、双击桌宠）；从源码运行时总是可用，`--debug` 启动也会打开 |
 | `assetsDir` | `null` | 外部素材目录（包含 `manifest.json`），`null` 为内置素材 |
 | `animation.highPriority` | `["confirmation", "error"]` | 以这些状态为目标时，立即交叉淡化离开当前 loop |
-| `animation.interruptibleLoops` | `["idle", "drowsy"]` | 离开这些状态的 loop 时不等这一轮播完 |
+| `animation.interruptibleLoops` | `["idle", "drowsy"]` | 两种切换方式下，离开这些状态的 loop 都不等这一轮播完 |
 | `animation.crossfadeMs` | `150` | 交叉淡化时长；`0` 表示不打断 loop，总是等这一轮播完 |
 | `animation.boostPlaybackRate` | `1` | 追赶高优先级目标时的播放速度，例如 `2`；`1` 为关闭 |
 | `animation.basePlaybackRate` | `1` | 所有片段的基础速度（调试面板的速度滑块改的就是它） |
@@ -252,7 +253,7 @@ D:/comfy/.venv/Scripts/python.exe scripts/export_frames.py   # webm → AVIF，�
 | `animation.eventChance` | `0.25` | 每播完一轮 loop 改播随机事件的概率（manifest 里事件自己写了 `chance` 时以它为准）；`0` 关闭 |
 | `animation.eventCooldownMs` | `60000` | 同一组随机事件之间至少间隔（事件自己写了 `cooldownMs` 时以它为准）；启动和每次换状态时重新计时 |
 | `animation.disabledEventGroups` | `[]` | 不触发这些组的随机事件：`"blink"` 为眨眼，`"fidget"` 为其他动作（没写 `group` 的事件） |
-| `animation.interruptibleEvents` | `true` | 随机事件播放中可以随时离开（交叉淡化） |
+| `animation.switchStyle` | `"smooth"` | 切换方式。`smooth` 流畅优先：随机事件和 loop 播完这一段再走，只有 `highPriority` 立即交叉淡化；`responsive` 响应优先：随机事件和所有 loop 都立即交叉淡化离开。托盘菜单“切换方式”里改的就是它，选择保存在 `data\app-state.json`，优先于配置文件 |
 | `animation.loopRateJitter` | `0.06` | 每一轮 loop 的播放速度在 1 ± 这个比例之间随机 |
 | `animation.swayDegrees` | `0` | 绘制时整体左右摇晃的最大角度（绕画面底部中点旋转）；`0` 关闭 |
 | `animation.swayPeriodMs` | `5000` | 摇晃的周期（叠加一条周期约 1.6 倍的正弦，不会完全重复） |
@@ -274,7 +275,7 @@ D:/comfy/.venv/Scripts/python.exe scripts/export_frames.py   # webm → AVIF，�
 
 ## 调试工具
 
-**调试面板**（托盘菜单或双击桌宠）：会话表（来源、项目、显示状态、基础状态、待播的一次性状态、后台任务数、最近事件；每行可以手动“移除”残留的会话）、引擎状态（当前片段、下一段、是否到达目标）、最近 200 条日志、手动切换目标状态的按钮、播放速度滑块、“全状态两两切换巡检”（一次覆盖 8 个状态之间的全部 56 种切换），当前状态的随机事件表（组、概率、冷却和剩余冷却，每个事件都可以“下一轮播放”手动触发；按组开关眨眼和其他事件），以及摇晃、loop 速度浮动、事件默认概率和冷却的滑块（只在本次运行有效）。
+**调试面板**（托盘菜单或双击桌宠；从源码运行时可用，打包版需要在配置里写 `"debugPanel": true`）：会话表（来源、项目、显示状态、基础状态、待播的一次性状态、后台任务数、最近事件；每行可以手动“移除”残留的会话）、引擎状态（当前片段、下一段、是否到达目标）、最近 200 条日志、手动切换目标状态的按钮、播放速度滑块、“全状态两两切换巡检”（一次覆盖 8 个状态之间的全部 56 种切换），当前状态的随机事件表（组、概率、冷却和剩余冷却，每个事件都可以“下一轮播放”手动触发；按组开关眨眼和其他事件），以及摇晃、loop 速度浮动、事件默认概率和冷却的滑块（只在本次运行有效）。
 
 **模拟 hook 事件**（桌宠开着时）：
 

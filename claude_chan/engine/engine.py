@@ -3,11 +3,11 @@
 规则：
 - intro / outro / transition 一旦开始必须播完；每段开始时按最新目标规划“下一段”，
   目标变化时只替换“下一段”，当前段不受影响。
-- loop 播完当前这一轮再退出；目标在 highPriority 里，或当前 loop 属于 interruptibleLoops 时，
-  立即交叉淡化到下一段。同一状态有多段 loop 变体时，每轮独立随机挑一段。
+- loop 和随机事件播完当前这一段再退出；目标在 highPriority 里、当前 loop 属于 interruptibleLoops，
+  或 switchStyle 是 "responsive"（响应优先）时，立即交叉淡化到下一段。同一状态有多段 loop 变体时，每轮独立随机挑一段。
 - 随机事件：停在某个状态时，每播完一轮 loop，按每个事件自己的概率（chance，默认 eventChance）决定要不要
   改播它；冷却（cooldownMs，默认 eventCooldownMs）按组计算，眨眼和其他动作互不影响。事件之后至少播一轮
-  loop，也不连续重复同一个事件。事件和 loop 一样首尾是 K0；interruptibleEvents 时可随时打断。
+  loop，也不连续重复同一个事件。事件和 loop 一样首尾是 K0。
 - 每一轮 loop 的播放速度在 1 ± loopRateJitter 之间随机。
 - 到达一次性状态后停留 oneshotHoldMs，然后确认（ack），再离开。
   目标仍是该状态（sticky）时就一直停在关键帧上。
@@ -250,8 +250,8 @@ class Engine:
             )
             urgent = (
                 high
-                or cur.state in self._cfg["interruptibleLoops"]
-                or (cur.type == "event" and self._cfg.get("interruptibleEvents", True))
+                or self._cfg.get("switchStyle") == "responsive"
+                or (cur.type == "loop" and cur.state in self._cfg["interruptibleLoops"])
             )
             if leaving and urgent and self._cfg["crossfadeMs"] > 0 and nxt is not None:
                 self._crossfading = True

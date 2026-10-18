@@ -18,7 +18,7 @@ class PetTray:
         self,
         icon: QIcon,
         pet: PetWindow,
-        open_debug: Callable[[], None],
+        open_debug: Callable[[], None] | None,
         reload_config: Callable[[], None],
         open_config_folder: Callable[[], None],
         quit_app: Callable[[], None],
@@ -27,6 +27,7 @@ class PetTray:
         switch_skin: Callable[[str], None] = lambda _name: None,
         follow: tuple[Callable[[], bool], Callable[[bool], None]] | None = None,
         version: str = "",
+        switch_style: tuple[Callable[[], str], Callable[[str], None]] | None = None,
     ) -> None:
         self._pet = pet
         self._menu = QMenu()
@@ -46,7 +47,8 @@ class PetTray:
         self._follow = (self._check("跟随 Claude 窗口", lambda: follow[1](self._follow.isChecked()) or self.refresh())
                         if follow else None)
         self._menu.addSeparator()
-        self._menu.addAction("打开调试面板", open_debug)
+        if open_debug:  # 发布版默认没有调试面板
+            self._menu.addAction("打开调试面板", open_debug)
         self._menu.addAction("重新加载配置", reload_config)
         self._menu.addAction("打开配置文件夹", open_config_folder)
         self._menu.addAction("重置位置和大小", pet.reset_geometry)
@@ -57,6 +59,16 @@ class PetTray:
                 action.setCheckable(True)
                 action.triggered.connect(lambda _=False, n=name: switch_skin(n))
                 self._skin_actions[name] = action
+        # 切换方式：流畅优先（小动作播完再走）/ 响应优先（立即切走）
+        self._style_state = switch_style[0] if switch_style else None
+        self._style_actions: dict[str, QAction] = {}
+        if switch_style:
+            menu = self._menu.addMenu("切换方式")
+            for style, label in (("smooth", "流畅优先：动作做完再切换"), ("responsive", "响应优先：立即切换")):
+                action = menu.addAction(label)
+                action.setCheckable(True)
+                action.triggered.connect(lambda _=False, s=style: switch_style[1](s))
+                self._style_actions[style] = action
         self._autostart = self._check("开机自启", lambda: autostart.set_enabled(self._autostart.isChecked()))
         self._menu.addSeparator()
         self._menu.addAction("退出", quit_app)
@@ -92,6 +104,9 @@ class PetTray:
         self._autostart.setChecked(autostart.is_enabled())
         for name, action in self._skin_actions.items():
             action.setChecked(name == self._current_skin())
+        if self._style_state:
+            for style, action in self._style_actions.items():
+                action.setChecked(style == self._style_state())
 
     def popup(self, pos: QPoint) -> None:
         self.refresh()
