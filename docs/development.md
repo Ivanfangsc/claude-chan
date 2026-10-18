@@ -116,7 +116,8 @@ confirmation > error > 工作中（writing / reading / thinking）> complete > i
 ### 动画
 
 - 枢纽 A（坐着，书合上）就是 idle；枢纽 B（书摊开）只是过渡姿势。thinking、confirmation、complete、error、drowsy 挂在 A 上，reading、writing 挂在 B 上。
-- 切换状态时在枢纽图上找最短路径，按顺序播放沿途片段。例如 thinking → writing 依次播 thinking 退出、A→B、writing 进入、writing 循环。
+- 切换状态时在枢纽图上找最短路径（片段数最少），按顺序播放沿途片段。例如 complete → writing 依次播 complete 退出、A→B、writing 进入、writing 循环。
+- **直达过渡**：thinking、reading、writing 三者之间有直接的过渡片段（`direct`），不经过枢纽，例如 thinking → writing 只播一段 `thinking-to-writing`（原来要绕退出、A→B、进入三段，约 15 秒）。路径长度相同时优先走原来经过枢纽的路线，不会为了凑路线路过别的状态。某一对没有直达片段时（比如 Q 版的 reading → writing）照旧绕枢纽。
 - intro、outro、过渡一旦开始必须播完；loop 播完这一轮再离开。以下几种情况会用约 150ms 的交叉淡化立即离开：目标是 confirmation 或 error；当前是 idle 或 drowsy 的 loop（一有动静就“回过神来”）；当前在播随机事件。
 - **loop 变体**：一个状态可以有多段 loop（`idle-loop`、`idle-loop-2`……），每轮随机换一段，不连续重复同一段。
 - **随机事件**：停在某个状态时，每播完一轮 loop，以 25% 的概率改播一段该状态的事件（比如 idle 打哈欠、张望，thinking 敲下巴，drowsy 惊醒），两次事件之间至少隔 60 秒。事件和 loop 一样首尾是该状态的关键帧，播完自然回到 loop。
@@ -131,6 +132,7 @@ confirmation > error > 工作中（writing / reading / thinking）> complete > i
 - 关键帧 PNG（1026×1824）：每个状态和两个枢纽各一张。它们用于启动时的占位画面，以及计算点击穿透的命中区域。
 - 透明动画 AVIF（540×960，24fps），manifest 里登记的就是它们；同名的 VP9 + Alpha WebM（774×1376）是生成时的原始文件，用 `scripts/export_frames.py` 转换：
   - `transition`：枢纽之间的过渡（A→B、B→A）
+  - `direct`：两个状态之间的直达过渡，`from` / `to` 是状态名（两头都得是 loop 状态）
   - `intro` / `outro`：从枢纽进入状态、从状态回到枢纽
   - `loop`：状态循环（idle 的循环挂在枢纽 A 上）；同一状态可以有多段变体
   - `event`：随机事件，首尾帧与所属状态的 loop 相同，中间是别的动作
@@ -150,6 +152,7 @@ confirmation > error > 工作中（writing / reading / thinking）> complete > i
   },
   "clips": [
     { "id": "hub-A-to-B", "type": "transition", "from": "A", "to": "B", "file": "videos/transitions/..." },
+    { "id": "thinking-to-writing", "type": "direct", "from": "thinking", "to": "writing", "file": "..." },  // 状态之间直达
     { "id": "thinking-intro", "type": "intro", "state": "thinking", "from": "A", "file": "..." },
     { "id": "thinking-outro", "type": "outro", "state": "thinking", "to": "A", "file": "..." },
     { "id": "thinking-loop", "type": "loop", "state": "thinking", "file": "..." },
@@ -159,7 +162,7 @@ confirmation > error > 工作中（writing / reading / thinking）> complete > i
 }
 ```
 
-启动时会校验 manifest：每个 loop 状态至少有一个 loop 片段，非枢纽状态都有 intro 和 outro，事件只能挂在 loop 状态上，引用的状态和枢纽都存在。有问题时显示在调试面板日志里。状态名必须是这 8 个之一：idle、thinking、reading、writing、confirmation、complete、error、drowsy。
+启动时会校验 manifest：每个 loop 状态至少有一个 loop 片段，非枢纽状态都有 intro 和 outro，事件只能挂在 loop 状态上，直达过渡的两头都是 loop 状态，引用的状态和枢纽都存在。有问题时显示在调试面板日志里。状态名必须是这 8 个之一：idle、thinking、reading、writing、confirmation、complete、error、drowsy。
 
 ### 替换素材
 
@@ -192,6 +195,7 @@ $env:CLAUDE_GIRL_SKIN="chibi"; node scripts/comfy/sway.mjs idle thinking   # 之
 node scripts/comfy/generate.mjs --list                  # 所有任务
 node scripts/comfy/sway.mjs thinking reading           # 持续动作的 loop：生成两段 → 拼成一圈 → 抠图 → 检测
 node scripts/comfy/batch.mjs T-hub-A-to-B T-reading-hub-to-state   # 过渡：生成 → 拼接抠图 → 检测 → 脸部检查图
+uv run python scripts/register_direct.py [chibi]   # 直达过渡（T-thinking-to-writing 等）生成后登记到 manifest，再运行 export_frames.py
 node scripts/comfy/insert.mjs idle-yawn thinking-tap    # 插入式随机动作：生成 → 插进 loop → 抠图 → 检测
 D:/comfy/.venv/Scripts/python.exe scripts/export_frames.py   # webm → AVIF，并更新点击区域 hitmask.png（所有片段所有帧的并集）
 ```
