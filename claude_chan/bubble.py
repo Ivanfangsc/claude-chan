@@ -2,9 +2,9 @@
 始终在她上面一层。
 
 排版（从上到下）：标题行（项目标签 + 等你确认 / 想问你……，后面跟会话标题）、Claude 的一句话、
-等宽小字的具体内容（文件和改动行数、网址、命令）、问题的选项、底部“另外 N 个会话也在等你”。
-字太多时：宽度固定（跟她的大小一起缩放），一句话最多两行，等宽内容一行、省略中间，选项最多两行、
-放不下的显示成“+N”。鼠标悬停时展开显示全文；左键点击发出 clicked（由 PetApp 跳回对应的会话），
+等宽小字的具体内容（文件和改动行数、网址、命令；问题只写有几个选项——气泡里点不了，不列出来免得误会）、
+底部“另外 N 个会话也在等你”。
+字太多时：宽度固定（跟她的大小一起缩放），一句话最多两行，等宽内容一行、省略中间。鼠标悬停时展开显示全文；左键点击发出 clicked（由 PetApp 跳回对应的会话），
 右键发出 dismissed（收起这一个）。
 """
 
@@ -27,7 +27,6 @@ DETAIL_BG = QColor("#f3eee6")
 DETAIL_FG = QColor("#5f574f")
 ADD = QColor("#3f8a4a")
 DEL = QColor("#c04a3a")
-CHIP = QColor("#d9cfbf")
 
 # Claude 的话不如工具自带的说明有用时（只是泛泛一句），以这些开头的不作为补充显示
 _CJK = re.compile(r"[一-鿿]")
@@ -40,8 +39,7 @@ class BubbleContent:
     verb: str  # 等你确认 / 想问你 / 计划写好了 …
     title: str | None  # 会话标题（桌面版侧边栏标题，或 CLI 会话里问的第一句话）
     main: str  # 主体的一句话
-    detail: str | None  # 等宽小字
-    options: tuple[str, ...]
+    detail: str | None  # 等宽小字（有中文时用正常字体）
     others: int
 
 
@@ -62,7 +60,9 @@ def content_of(target, title: str | None, show_commands: bool) -> BubbleContent 
         main = ask.say
         extra = ask.text if ask.text and not ask.text.startswith(GENERIC) else None
         detail = ask.detail or (ask.command if show_commands else extra)
-    return BubbleContent(target.project or "", ask.verb, title, main, detail, tuple(ask.options), target.others_waiting)
+    if ask.options and not detail:  # 选项在气泡里点不了，只说有几个，点气泡去 Claude 里选
+        detail = f"{len(ask.options)} 个选项，点这里去回答"
+    return BubbleContent(target.project or "", ask.verb, title, main, detail, target.others_waiting)
 
 
 def _wrap(text: str, fm: QFontMetricsF, width: float, max_lines: int) -> list[str]:
@@ -179,27 +179,6 @@ class Bubble(QWidget):
             h = len(det) * cfm.height() * 1.3 + 8 * s
             lay["detail"] = (y, h, det)
             y += h
-        # 选项
-        if c.options:
-            y += 8 * s
-            rows: list[list[str]] = [[]]
-            x = 0.0
-            chip_h = hfm.height() + 6 * s
-            opts = list(c.options)
-            max_rows = 4 if self._expanded else 2
-            for k, o in enumerate(opts):
-                w = hfm.horizontalAdvance(o) + 20 * s
-                if x + w > inner and rows[-1]:
-                    if len(rows) == max_rows:
-                        rest = len(opts) - k
-                        rows[-1].append(f"+{rest}")
-                        break
-                    rows.append([])
-                    x = 0.0
-                rows[-1].append(o)
-                x += w + 6 * s
-            lay["chips"] = (y, chip_h, rows)
-            y += len(rows) * (chip_h + 6 * s) - 6 * s
         # 另外几个会话
         if c.others:
             y += 6 * s
@@ -322,22 +301,6 @@ class Bubble(QWidget):
                 else:
                     p.setPen(DETAIL_FG)
                     p.drawText(rect, Qt.AlignmentFlag.AlignVCenter, ln)
-        # 选项
-        if "chips" in lay:
-            y, ch, rows = lay["chips"]
-            p.setFont(head_f)
-            fm = QFontMetricsF(head_f)
-            for r_i, row in enumerate(rows):
-                x = left
-                for o in row:
-                    w = fm.horizontalAdvance(o) + 20 * s
-                    rect = QRectF(x, y + r_i * (ch + 6 * s), w, ch)
-                    p.setPen(QPen(CHIP, 1))
-                    p.setBrush(Qt.BrushStyle.NoBrush)
-                    p.drawRoundedRect(rect, ch / 2, ch / 2)
-                    p.setPen(MAIN)
-                    p.drawText(rect, Qt.AlignmentFlag.AlignCenter, o)
-                    x += w + 6 * s
         if "others" in lay:
             y, h, txt = lay["others"]
             p.setFont(head_f)

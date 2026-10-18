@@ -131,3 +131,9 @@ def test_english_narration_skipped_in_chinese_session():
     t = DisplayTarget("confirmation", 1, project="my-app", ask=ask)
     assert content_of(t, "重构登录", show_commands=False).main == "想修改文件"
     assert content_of(t, "Refactor login", show_commands=False).main == "Adding the settings submenu."
+
+
+def test_options_are_not_listed():
+    ask = Ask("想问你", text="用哪个框架？", options=("React", "Vue", "Svelte"))
+    c = content_of(DisplayTarget("confirmation", 1, project="my-app", ask=ask), None, show_commands=False)
+    assert c.main == "用哪个框架？" and c.detail == "3 个选项，点这里去回答"
