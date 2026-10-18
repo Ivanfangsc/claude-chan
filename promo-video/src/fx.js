@@ -178,18 +178,72 @@ export function footage(ctx, clip, lt, x, y, h, { loop = true, frame = true, tag
     }
     ctx.restore()
   }
-  if (tag) {
-    font(ctx, 20, FONT.cjk, 900)
-    const label = '实机画面  IN-APP'
-    const tw = ctx.measureText(label).width + 28
-    ctx.fillStyle = C.ink
-    roundRect(ctx, x + 18, y + 18, tw, 38, 8); ctx.fill()
-    ctx.fillStyle = C.orange
-    ctx.beginPath(); ctx.arc(x + 34, y + 37, 6, 0, Math.PI * 2); ctx.fill()
-    text(ctx, label, x + 48, y + 44, { size: 20, weight: 900, color: C.cream })
-  }
+  if (tag) footageTag(ctx, x + 18, y + 18)
   ctx.restore()
   return w
+}
+
+// “实机画面”标签：黑底宽度按文字算，文字不会超出去
+export function footageTag(ctx, x, y) {
+  font(ctx, 22, FONT.cjk, 900)
+  const label = '实机画面'
+  const w = 16 + 14 + 10 + ctx.measureText(label).width + 18
+  ctx.save()
+  ctx.fillStyle = C.ink
+  roundRect(ctx, x, y, w, 40, 8); ctx.fill()
+  ctx.fillStyle = C.orange
+  ctx.beginPath(); ctx.arc(x + 16 + 7, y + 20, 7, 0, Math.PI * 2); ctx.fill()
+  text(ctx, label, x + 16 + 14 + 10, y + 20, { size: 22, weight: 900, color: C.cream, baseline: 'middle' })
+  ctx.restore()
+  return w
+}
+
+// Claude 窗口示意：只用大白话写“Claude 在做什么”，不出现命令和技术细节。
+// rows: [{ text, color, size, weight, gap }]，高度跟着内容走；buttons: 底部的按钮（等你确认时用）
+export function claudeWindow(ctx, x, y, w, rows, { title = 'Claude', buttons = null, progress = null } = {}) {
+  const pad = 46
+  let h = 64 + pad
+  for (const r of rows) h += (r.size ?? 40) * 1.5 + (r.gap ?? 0)
+  if (progress !== null) h += 60
+  if (buttons) h += 96
+  h += pad - 14
+  ctx.save()
+  ctx.fillStyle = 'rgba(40,20,10,0.22)'
+  roundRect(ctx, x + 12, y + 16, w, h, 26); ctx.fill()
+  ctx.fillStyle = '#fbf9f5'
+  roundRect(ctx, x, y, w, h, 26); ctx.fill()
+  ctx.fillStyle = C.ink
+  roundRect(ctx, x, y, w, 64, [26, 26, 0, 0]); ctx.fill()
+  ctx.fillStyle = C.orange
+  ctx.beginPath(); ctx.arc(x + 36, y + 32, 11, 0, Math.PI * 2); ctx.fill()
+  text(ctx, title, x + 60, y + 32, { size: 26, weight: 700, color: C.cream, baseline: 'middle' })
+  let yy = y + 64 + pad
+  for (const r of rows) {
+    const size = r.size ?? 40
+    yy += r.gap ?? 0
+    text(ctx, r.text, x + pad, yy + size * 0.75, { size, weight: r.weight ?? 700, color: r.color ?? C.ink, baseline: 'middle' })
+    yy += size * 1.5
+  }
+  if (progress !== null) {
+    ctx.fillStyle = '#e6dfd2'
+    roundRect(ctx, x + pad, yy + 14, w - pad * 2, 22, 11); ctx.fill()
+    ctx.fillStyle = C.orange
+    roundRect(ctx, x + pad, yy + 14, Math.max(22, (w - pad * 2) * progress), 22, 11); ctx.fill()
+    yy += 60
+  }
+  if (buttons) {
+    let bx = x + pad
+    buttons.forEach(([label, primary]) => {
+      font(ctx, 32, FONT.cjk, 900)
+      const bw = ctx.measureText(label).width + 64
+      ctx.fillStyle = primary ? C.orange : '#e6dfd2'
+      roundRect(ctx, bx, yy + 16, bw, 64, 14); ctx.fill()
+      text(ctx, label, bx + bw / 2, yy + 48, { size: 32, weight: 900, color: C.ink, align: 'center', baseline: 'middle' })
+      bx += bw + 20
+    })
+  }
+  ctx.restore()
+  return h
 }
 
 // 终端面板（Claude Code 的样子）：lines = [[文字, 颜色]]
