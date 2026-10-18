@@ -438,6 +438,13 @@
       "from": "writing",
       "to": "reading",
       "file": "videos/transitions/claude-girl-writing-to-reading-transparent-9x16.avif"
+    },
+    {
+      "id": "reading-to-writing",
+      "type": "direct",
+      "from": "reading",
+      "to": "writing",
+      "file": "videos/transitions/claude-girl-reading-to-writing-transparent-9x16.avif"
     }
   ]
 }
