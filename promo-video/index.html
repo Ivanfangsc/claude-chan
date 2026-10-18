@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Claude-Chan 宣传片</title>
+<style>
+  html, body { margin: 0; background: #111; color: #ddd; font: 14px "Microsoft YaHei", sans-serif; }
+  canvas { display: block; width: 100%; max-width: 1920px; aspect-ratio: 16 / 9; margin: 0 auto; background: #000; }
+  #bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 12px; }
+  #bar button { background: #2a2725; color: #f2eee6; border: 0; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  #seek { flex: 1; min-width: 240px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="bar" hidden>
+  <button id="play">播放 / 暂停</button>
+  <input id="seek" type="range" min="0" step="0.01">
+  <span id="label"></span>
+  <span id="scenes"></span>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

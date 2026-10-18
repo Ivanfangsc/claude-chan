@@ -1,0 +1,12 @@
+{
+  "name": "claude-chan-promo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs",
+    "sheet": "node render.mjs --sheet"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}
