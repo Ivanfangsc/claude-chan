@@ -104,13 +104,12 @@ function switching(ctx, lt) {
   ctx.fillRect(0, 0, W, H)
   stripes(ctx, lt, '#e9e2d4', { gap: 52, width: 18, speed: 25 })
   halftone(ctx, W - 640, H - 440, 640, 440, C.orange2, { dir: 'br', step: 24, maxR: 8 })
-  popText(ctx, '状态一换，她就自然地转过去', 120, 120, lt, 0.1, { size: 60, stagger: 0.03 })
-  const ph = 700, pw = 540 * ph / 960, gap = 90
+  const ph = 820, pw = 540 * ph / 960, gap = 90
   const x0 = (W - (pw * 3 + gap * 2)) / 2
   ROUNDS[r].forEach((p, k) => {
     const a = ease.back(prog(rt, 0.05 + k * 0.08, 0.4))
     if (a <= 0) return
-    const x = x0 + k * (pw + gap), y = 240
+    const x = x0 + k * (pw + gap), y = 90
     const { clip, t, k: part } = chainAt(p.parts, rt)
     ctx.save()
     ctx.translate(x + pw / 2, y + ph / 2); ctx.scale(a, a); ctx.translate(-x - pw / 2, -y - ph / 2)
