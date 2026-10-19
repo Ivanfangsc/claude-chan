@@ -82,7 +82,7 @@ function profile(ctx, lt) {
 }
 
 // ---------- #01 状态切换：三格同时播，按桌宠的播放顺序接起来 ----------
-const tail = id => [A(id), LOOP_END - 1.1]
+const tail = id => [A(id), LOOP_END - 0.6]
 const ROUNDS = [
   [
     { from: '待机', to: '思考', parts: [tail('idle-loop'), [A('thinking-intro')], [A('thinking-loop')]] },
@@ -96,7 +96,7 @@ const ROUNDS = [
   ]
 ]
 // 每轮的长度（换配乐后按小节再调）
-const ROUND_DURS = [8.4, 8.4]
+const ROUND_DURS = [6.4, 7.8]
 function switching(ctx, lt) {
   const r = lt < ROUND_DURS[0] ? 0 : 1
   const rt = lt - (r ? ROUND_DURS[0] : 0)
@@ -229,9 +229,8 @@ function outro(ctx, lt) {
 const CUTS = [
   ['开场', 3.0, open],
   ['标题', 4.5, title],
-  ['人物介绍', 3.6, profile],
   ['状态切换', ROUND_DURS[0] + ROUND_DURS[1], switching],
-  ['小动作', 8.0, variety],
+  ['小动作', 6.0, variety],
   ['形象', 4.0, looks],
   ['其余功能', 5.8, quick],
   ['结尾', 6.5, outro]
