@@ -10,7 +10,7 @@ import { info } from './assets.js'
 const A = id => `adult/${id}`
 const Q = id => `chibi/${id}`
 const LOOP_END = 138 / 24 // 摇晃 loop 一圈的长度
-const BEAT = 0.6 // 一拍（换配乐后按实际速度改）
+const BEAT = 0.604 // 配乐一拍
 
 // 把几段按播放顺序接起来：后一段跳过首帧（和上一段末帧是同一帧）。parts: [[片段, 起点秒]]
 function chainAt(parts, lt) {
@@ -95,8 +95,8 @@ const ROUNDS = [
     { from: '写代码', to: '思考', parts: [tail('writing-loop'), [A('writing-to-thinking')], [A('thinking-loop')]] }
   ]
 ]
-// 每轮的长度（换配乐后按小节再调）
-const ROUND_DURS = [6.4, 7.8]
+// 每轮的长度：过渡做完就收；第二轮落在拍上，结束在主旋律进来的那一小节
+const ROUND_DURS = [6.71, 7.78]
 function switching(ctx, lt) {
   const r = lt < ROUND_DURS[0] ? 0 : 1
   const rt = lt - (r ? ROUND_DURS[0] : 0)
@@ -182,7 +182,7 @@ function quick(ctx, lt) {
   halftone(ctx, W - 760, 0, 760, 520, C.deep, { dir: 'tr', step: 24, maxR: 9 })
   footage(ctx, A('idle-loop-2'), lt, 1260, 110, 860)
   QUICK.forEach((s, k) => {
-    const a = ease.out(prog(lt, 0.5 + k * BEAT, 0.3)) // 一拍一条
+    const a = ease.out(prog(lt, (k + 1) * BEAT, 0.3)) // 一拍一条
     if (a <= 0) return
     const y = 270 + k * 132
     ctx.save()
@@ -220,20 +220,22 @@ function outro(ctx, lt) {
   const cr = prog(lt, 1.6, 0.6)
   text(ctx, '人设：ZipZipPipe　·　特别感谢：黑鹤001　·　角色动画由 AI 生成', W / 2, 960, { size: 24, weight: 500, color: C.mute, align: 'center', alpha: cr })
   text(ctx, '非 Anthropic 官方作品。Claude 是 Anthropic, PBC 的商标。', W / 2, 1004, { size: 24, weight: 500, color: C.mute, align: 'center', alpha: cr })
-  const out = prog(lt, 6.2, 1.2)
+  const out = prog(lt, 4.9, 1.1)
   if (out > 0) { ctx.fillStyle = `rgba(0,0,0,${out})`; ctx.fillRect(0, 0, W, H) }
 }
 
 // ---------- 时间线 ----------
-// 每段的长度（秒）。换配乐后再按小节线微调。
+// 每段的长度（秒），按配乐《おしんこ》对过：约 99 BPM，一小节 2.41 秒，四小节一个乐句。
+// 标题落在第一个小节线（3.30）；小动作和主旋律一起进来（22.83）；其余功能从下一个乐句开始（32.46）；
+// 其余的切点落在小节或半小节上。不卡每个点，只让段落跟着音乐走。
 const CUTS = [
-  ['开场', 3.0, open],
-  ['标题', 4.5, title],
+  ['开场', 3.30, open],
+  ['标题', 5.04, title],
   ['状态切换', ROUND_DURS[0] + ROUND_DURS[1], switching],
-  ['小动作', 6.0, variety],
-  ['形象', 4.0, looks],
-  ['其余功能', 5.8, quick],
-  ['结尾', 6.5, outro]
+  ['小动作', 6.03, variety],
+  ['形象', 3.60, looks],
+  ['其余功能', 5.98, quick],
+  ['结尾', 6.00, outro]
 ]
 export const TIMELINE = []
 let acc = 0
