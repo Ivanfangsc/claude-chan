@@ -10,6 +10,7 @@ import { info } from './assets.js'
 const A = id => `adult/${id}`
 const Q = id => `chibi/${id}`
 const LOOP_END = 138 / 24 // 摇晃 loop 一圈的长度
+const BEAT = 0.604 // 配乐一拍
 
 // 把几段按播放顺序接起来：后一段跳过首帧（和上一段末帧是同一帧）。parts: [[片段, 起点秒]]
 function chainAt(parts, lt) {
@@ -101,10 +102,11 @@ const ROUNDS = [
     { from: '写代码', to: '思考', parts: [tail('writing-loop'), [A('writing-to-thinking')], [A('thinking-loop')]] }
   ]
 ]
-export const ROUND_DUR = 8.4
+// 每轮的长度：第二轮正好在配乐进主旋律的那一小节开始
+const ROUND_DURS = [9.57, 8.42]
 function switching(ctx, lt) {
-  const r = Math.min(ROUNDS.length - 1, Math.floor(lt / ROUND_DUR))
-  const rt = lt - r * ROUND_DUR
+  const r = lt < ROUND_DURS[0] ? 0 : 1
+  const rt = lt - (r ? ROUND_DURS[0] : 0)
   ctx.fillStyle = C.cream
   ctx.fillRect(0, 0, W, H)
   stripes(ctx, lt, '#e9e2d4', { gap: 52, width: 18, speed: 25 })
@@ -141,7 +143,7 @@ function switching(ctx, lt) {
     ctx.restore()
   })
   if (r > 0) wipe(ctx, rt, [C.orange, C.ink], 0.32)
-  if (r < ROUNDS.length - 1 && rt > ROUND_DUR - 0.45) wipe(ctx, rt - ROUND_DUR, [C.orange, C.ink], 0.32)
+  if (r === 0 && rt > ROUND_DURS[0] - 0.45) wipe(ctx, rt - ROUND_DURS[0], [C.orange, C.ink], 0.32)
 }
 
 // ---------- #02 看不出循环、小动作插在摇晃里 ----------
@@ -194,7 +196,7 @@ function quick(ctx, lt) {
   footage(ctx, A('idle-loop-2'), lt, 1260, 110, 860)
   text(ctx, '还有这些', 160, 200, { size: 40, weight: 900, color: C.orange, alpha: prog(lt, 0.1, 0.3) })
   QUICK.forEach((s, k) => {
-    const a = ease.out(prog(lt, 0.35 + k * 0.45, 0.35))
+    const a = ease.out(prog(lt, 0.5 + k * BEAT, 0.3)) // 一拍一条
     if (a <= 0) return
     const y = 330 + k * 132
     ctx.save()
@@ -233,28 +235,30 @@ function outro(ctx, lt) {
   const cr = prog(lt, 2.2, 0.6)
   text(ctx, '人设：ZipZipPipe　·　特别感谢：黑鹤001　·　角色动画由 AI 生成', W / 2, 960, { size: 24, weight: 500, color: C.mute, align: 'center', alpha: cr })
   text(ctx, '非 Anthropic 官方作品。Claude 是 Anthropic, PBC 的商标。', W / 2, 1004, { size: 24, weight: 500, color: C.mute, align: 'center', alpha: cr })
-  const out = prog(lt, 5.5, 1.0)
+  const out = prog(lt, 6.2, 1.2)
   if (out > 0) { ctx.fillStyle = `rgba(0,0,0,${out})`; ctx.fillRect(0, 0, W, H) }
 }
 
 // ---------- 时间线 ----------
 const chap = (num, t, en) => (ctx, lt) => chapter(ctx, lt, num, t, en)
-export const TIMELINE = [
-  { name: '开场', dur: 3.0, draw: open },
-  { name: '标题', dur: 4.5, draw: title, enter: 'wipe' },
-  { name: '人物介绍', dur: 4.5, draw: profile, enter: 'wipe' },
-  { name: '#01', dur: 1.2, draw: chap('#01', '切换状态，动作不停', 'SEAMLESS TRANSITIONS'), enter: 'flash' },
-  { name: '状态切换', dur: ROUNDS.length * ROUND_DUR, draw: switching, enter: 'wipe' },
-  { name: '#02', dur: 1.2, draw: chap('#02', '一直在动，看不出循环', 'NEVER GETS OLD'), enter: 'flash' },
-  { name: '小动作', dur: 8.5, draw: variety, enter: 'wipe' },
-  { name: '#03', dur: 1.2, draw: chap('#03', '两种形象', 'TWO LOOKS'), enter: 'flash' },
-  { name: '形象', dur: 4.5, draw: looks, enter: 'wipe' },
-  { name: '其余功能', dur: 5.5, draw: quick, enter: 'wipe' },
-  { name: '结尾', dur: 6.5, draw: outro, enter: 'wipe' }
+// 配乐《おしんこ》约 99 BPM（一拍 0.604 秒，一小节 2.41 秒）。各段从小节线开始，章节卡占前一小节的最后两拍；
+// 不卡每个点，只让切换落在音乐的段落上。at 是这一段在片中开始的秒数，也就是配乐里的时间。
+const CUTS = [
+  { at: 0, name: '开场', draw: open },
+  { at: 3.30, name: '标题', draw: title, enter: 'wipe' },
+  { at: 7.73, name: '人物介绍', draw: profile, enter: 'wipe' },
+  { at: 12.05, name: '#01', draw: chap('#01', '切换状态，动作不停', 'SEAMLESS TRANSITIONS'), enter: 'flash' },
+  { at: 13.26, name: '状态切换', draw: switching, enter: 'wipe' },
+  { at: 31.25, name: '#02', draw: chap('#02', '一直在动，看不出循环', 'NEVER GETS OLD'), enter: 'flash' },
+  { at: 32.46, name: '小动作', draw: variety, enter: 'wipe' },
+  { at: 40.84, name: '#03', draw: chap('#03', '两种形象', 'TWO LOOKS'), enter: 'flash' },
+  { at: 42.05, name: '形象', draw: looks, enter: 'wipe' },
+  { at: 46.86, name: '其余功能', draw: quick, enter: 'wipe' },
+  { at: 51.66, name: '结尾', draw: outro, enter: 'wipe' }
 ]
-let acc = 0
-for (const s of TIMELINE) { s.start = acc; acc += s.dur }
-export const DURATION = acc
+const END = 59.12 // 这一句音乐收尾的地方
+export const TIMELINE = CUTS.map((c, i) => ({ ...c, start: c.at, dur: (CUTS[i + 1]?.at ?? END) - c.at }))
+export const DURATION = END
 
 export function drawAt(ctx, t) {
   const i = Math.max(0, TIMELINE.findIndex(s => t < s.start + s.dur))
