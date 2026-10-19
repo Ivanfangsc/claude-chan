@@ -58,7 +58,7 @@ Claude Code 在思考、读代码、写代码、等你确认、做完了、出�
    claude plugin install claude-chan@claude-chan
    然后用 claude plugin list 确认 claude-chan@claude-chan 是 enabled。
 5. 如果我也在 WSL 里用 Claude Code，提醒我 README 里“WSL 里使用”那一节的设置。
-最后告诉我：右键桌宠，勾选“开机自启”。
+最后告诉我：右键桌宠，打开“设置…”，勾选“开机自启”。
 ```
 
 想自己装的话，按下面三步来。
