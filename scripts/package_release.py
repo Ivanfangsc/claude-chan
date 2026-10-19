@@ -26,7 +26,8 @@ def main() -> None:
     for need in ("LICENSE", "ASSETS-LICENSE.md"):
         if not (SRC / "_internal" / need).exists() and not (SRC / need).exists():
             sys.exit(f"打包目录里缺少 {need}，检查 claude-chan.spec 的 datas")
-    files = sorted(p for p in SRC.rglob("*") if p.is_file())
+    # data 是本机运行打包版时留下的设置和日志，不能发出去（用户解压覆盖时会盖掉自己的设置）
+    files = sorted(p for p in SRC.rglob("*") if p.is_file() and p.relative_to(SRC).parts[0] != "data")
     with zipfile.ZipFile(DST, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
         for p in files:
             # 解压后得到一个 ClaudeChan 文件夹
