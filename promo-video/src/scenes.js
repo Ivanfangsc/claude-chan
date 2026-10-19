@@ -4,13 +4,13 @@
 // 连续播放的几段，按桌宠真正的播放顺序接起来（loop 结尾 → 过渡 → 下一个状态），和桌宠里看到的一样。
 
 import { C, FONT, H, W, ease, lerp, popText, prog, roundRect, text, typed } from './core.js'
-import { chapter, flash, footage, halftone, pill, slab, speedLines, stripes, wipe } from './fx.js'
+import { footage, halftone, slab, speedLines, stripes, wipe } from './fx.js'
 import { info } from './assets.js'
 
 const A = id => `adult/${id}`
 const Q = id => `chibi/${id}`
 const LOOP_END = 138 / 24 // 摇晃 loop 一圈的长度
-const BEAT = 0.604 // 配乐一拍
+const BEAT = 0.6 // 一拍（换配乐后按实际速度改）
 
 // 把几段按播放顺序接起来：后一段跳过首帧（和上一段末帧是同一帧）。parts: [[片段, 起点秒]]
 function chainAt(parts, lt) {
@@ -49,17 +49,13 @@ function title(ctx, lt) {
   popText(ctx, 'Claude-Chan', 120, 470, lt, 0.2, { size: 230, family: FONT.title, weight: 700, stretch: 'condensed',
     color: C.ink, stagger: 0.03, shadow: { color: C.orange, dx: 10, dy: 10 } })
   popText(ctx, '陪你写代码的桌面小伙伴', 128, 600, lt, 0.75, { size: 72, color: C.ink, stagger: 0.035 })
-  text(ctx, 'A DESKTOP COMPANION FOR CLAUDE CODE', 132, 680, { size: 30, family: FONT.title, weight: 600, color: C.deep,
-    alpha: prog(lt, 1.4, 0.5), stretch: 'condensed' })
   text(ctx, '免费  ·  开源  ·  Windows', 132, 968, { size: 36, weight: 700, color: C.cream, alpha: prog(lt, 1.6, 0.5) })
 }
 
 // ---------- 人物介绍卡 ----------
 const PROFILE = [
-  ['身份', 'Claude Code 的桌面伙伴'],
   ['性格', '稳重、安静，偶尔喝口茶'],
-  ['特长', '看懂 Claude 在忙什么'],
-  ['形象', '原版 ／ Q 版']
+  ['特长', '看懂 Claude 在忙什么']
 ]
 function profile(ctx, lt) {
   ctx.fillStyle = C.ink
@@ -70,12 +66,10 @@ function profile(ctx, lt) {
   stripes(ctx, lt, C.ink2, { gap: 70, width: 30, speed: 40, alpha: 0.6 })
   halftone(ctx, 0, H - 420, 700, 420, C.deep, { dir: 'bl', step: 22, maxR: 8 })
   footage(ctx, A('idle-loop-2'), lt, 150, 80, 900)
-  text(ctx, 'CHARACTER', 900, 190, { size: 34, family: FONT.title, weight: 600, color: C.orange, stretch: 'condensed', alpha: prog(lt, 0.1, 0.4) })
-  popText(ctx, 'Claude-Chan', 896, 330, lt, 0.15, { size: 150, family: FONT.title, weight: 700, stretch: 'condensed', color: C.cream, stagger: 0.025 })
   PROFILE.forEach(([k, v], i) => {
-    const a = ease.out(prog(lt, 0.6 + i * 0.25, 0.35))
+    const a = ease.out(prog(lt, 0.3 + i * 0.3, 0.35))
     if (a <= 0) return
-    const y = 420 + i * 120
+    const y = 440 + i * 140
     ctx.save()
     ctx.globalAlpha = a
     ctx.translate((1 - a) * 60, 0)
@@ -85,7 +79,6 @@ function profile(ctx, lt) {
     text(ctx, v, 1060, y + 36, { size: 44, weight: 700, color: C.cream, baseline: 'middle' })
     ctx.restore()
   })
-  text(ctx, '※ 片中她的动作，全部是桌宠的实机画面', 900, 1000, { size: 26, weight: 500, color: C.mute, alpha: prog(lt, 1.8, 0.5) })
 }
 
 // ---------- #01 状态切换：三格同时播，按桌宠的播放顺序接起来 ----------
@@ -102,8 +95,8 @@ const ROUNDS = [
     { from: '写代码', to: '思考', parts: [tail('writing-loop'), [A('writing-to-thinking')], [A('thinking-loop')]] }
   ]
 ]
-// 每轮的长度：第二轮正好在配乐进主旋律的那一小节开始
-const ROUND_DURS = [9.57, 8.42]
+// 每轮的长度（换配乐后按小节再调）
+const ROUND_DURS = [8.4, 8.4]
 function switching(ctx, lt) {
   const r = lt < ROUND_DURS[0] ? 0 : 1
   const rt = lt - (r ? ROUND_DURS[0] : 0)
@@ -112,7 +105,6 @@ function switching(ctx, lt) {
   stripes(ctx, lt, '#e9e2d4', { gap: 52, width: 18, speed: 25 })
   halftone(ctx, W - 640, H - 440, 640, 440, C.orange2, { dir: 'br', step: 24, maxR: 8 })
   popText(ctx, '状态一换，她就自然地转过去', 120, 120, lt, 0.1, { size: 60, stagger: 0.03 })
-  text(ctx, '每两个状态之间，都有一段专门的过渡动画', 124, 186, { size: 32, weight: 500, color: C.deep, alpha: prog(lt, 0.6, 0.4) })
   const ph = 700, pw = 540 * ph / 960, gap = 90
   const x0 = (W - (pw * 3 + gap * 2)) / 2
   ROUNDS[r].forEach((p, k) => {
@@ -147,17 +139,15 @@ function switching(ctx, lt) {
 }
 
 // ---------- #02 看不出循环、小动作插在摇晃里 ----------
-const ACTS = [[A('event-idle-tea'), '喝口茶'], [A('event-idle-flower'), '扶正发饰'], [A('event-idle-gaze'), '望向远方']]
+const ACTS = [A('event-idle-tea'), A('event-idle-flower'), A('event-idle-gaze')]
 function variety(ctx, lt) {
   ctx.fillStyle = C.paper
   ctx.fillRect(0, 0, W, H)
   halftone(ctx, 0, H - 460, 760, 460, C.orange2, { dir: 'bl', step: 24, maxR: 9 })
   footage(ctx, A('idle-loop'), lt, 120, 100, 860)
-  popText(ctx, '一直轻轻摇晃，', 700, 190, lt, 0.1, { size: 66, stagger: 0.035 })
-  popText(ctx, '却看不出“又从头开始了”。', 700, 280, lt, 0.4, { size: 66, stagger: 0.035 })
-  text(ctx, '时不时，摇着摇着就做点小动作，做完接着摇：', 704, 360, { size: 32, weight: 500, color: C.deep, alpha: prog(lt, 1.0, 0.4) })
+  popText(ctx, '一直在动，时不时还有小动作', 700, 250, lt, 0.1, { size: 66, stagger: 0.035 })
   const ph = 540, pw = 540 * ph / 960
-  ACTS.forEach(([clip, label], k) => {
+  ACTS.forEach((clip, k) => {
     const a = ease.back(prog(lt, 1.1 + k * 0.12, 0.4))
     if (a <= 0) return
     const x = 704 + k * (pw + 70), y = 400
@@ -165,7 +155,6 @@ function variety(ctx, lt) {
     ctx.translate(x + pw / 2, y + ph / 2); ctx.scale(a, a); ctx.translate(-x - pw / 2, -y - ph / 2)
     // 小动作本身就是从摇晃里接出去、再接回摇晃的一段
     footage(ctx, clip, Math.max(0, lt - 1.1) + 0.8, x, y, ph, { tag: false })
-    pill(ctx, x + 18, y + ph - 70, label, { size: 28 })
     ctx.restore()
   })
 }
@@ -183,7 +172,6 @@ function looks(ctx, lt) {
   footage(ctx, Q('idle-loop'), lt, lerp(W + 40, 1240, b), 120, 860)
   popText(ctx, '原版', 660, 1010, lt, 0.4, { size: 64, color: C.ink })
   popText(ctx, 'Q 版', 1250, 1040, lt, 0.55, { size: 64, color: C.ink })
-  text(ctx, '想换就换', W / 2 - 20, 90, { size: 44, weight: 900, color: C.ink, align: 'center', alpha: prog(lt, 0.7, 0.4) })
 }
 
 // ---------- 其余功能，一笔带过 ----------
@@ -194,11 +182,10 @@ function quick(ctx, lt) {
   stripes(ctx, lt, C.ink2, { gap: 70, width: 30, speed: 40 })
   halftone(ctx, W - 760, 0, 760, 520, C.deep, { dir: 'tr', step: 24, maxR: 9 })
   footage(ctx, A('idle-loop-2'), lt, 1260, 110, 860)
-  text(ctx, '还有这些', 160, 200, { size: 40, weight: 900, color: C.orange, alpha: prog(lt, 0.1, 0.3) })
   QUICK.forEach((s, k) => {
     const a = ease.out(prog(lt, 0.5 + k * BEAT, 0.3)) // 一拍一条
     if (a <= 0) return
-    const y = 330 + k * 132
+    const y = 270 + k * 132
     ctx.save()
     ctx.globalAlpha = a
     ctx.translate((1 - a) * -80, 0)
@@ -219,8 +206,7 @@ function outro(ctx, lt) {
   footage(ctx, Q('complete-loop'), lt, W - 80 - 360, 240, 640, { tag: false, alpha: ease.out(prog(lt, 0.25, 0.5)) })
   popText(ctx, 'Claude-Chan', W / 2, 520, lt, 0.35, { size: 160, family: FONT.title, weight: 700, stretch: 'condensed',
     color: C.cream, stagger: 0.03, align: 'center', shadow: { color: C.orange, dx: 9, dy: 9 } })
-  text(ctx, '陪你把代码写完。', W / 2, 630, { size: 52, weight: 700, color: C.orange, align: 'center', alpha: prog(lt, 1.0, 0.5) })
-  const dl = prog(lt, 1.5, 0.5)
+  const dl = prog(lt, 1.0, 0.5)
   if (dl > 0) {
     ctx.save()
     ctx.globalAlpha = dl
@@ -228,11 +214,11 @@ function outro(ctx, lt) {
     const label = '免费下载 · github.com/Ivanfangsc/claude-chan'
     const w = ctx.measureText(label).width + 80
     ctx.fillStyle = C.orange
-    roundRect(ctx, W / 2 - w / 2, 700, w, 76, 38); ctx.fill()
-    text(ctx, label, W / 2, 738, { size: 34, weight: 900, color: C.ink, align: 'center', baseline: 'middle' })
+    roundRect(ctx, W / 2 - w / 2, 640, w, 76, 38); ctx.fill()
+    text(ctx, label, W / 2, 678, { size: 34, weight: 900, color: C.ink, align: 'center', baseline: 'middle' })
     ctx.restore()
   }
-  const cr = prog(lt, 2.2, 0.6)
+  const cr = prog(lt, 1.6, 0.6)
   text(ctx, '人设：ZipZipPipe　·　特别感谢：黑鹤001　·　角色动画由 AI 生成', W / 2, 960, { size: 24, weight: 500, color: C.mute, align: 'center', alpha: cr })
   text(ctx, '非 Anthropic 官方作品。Claude 是 Anthropic, PBC 的商标。', W / 2, 1004, { size: 24, weight: 500, color: C.mute, align: 'center', alpha: cr })
   const out = prog(lt, 6.2, 1.2)
@@ -240,25 +226,21 @@ function outro(ctx, lt) {
 }
 
 // ---------- 时间线 ----------
-const chap = (num, t, en) => (ctx, lt) => chapter(ctx, lt, num, t, en)
-// 配乐《おしんこ》约 99 BPM（一拍 0.604 秒，一小节 2.41 秒）。各段从小节线开始，章节卡占前一小节的最后两拍；
-// 不卡每个点，只让切换落在音乐的段落上。at 是这一段在片中开始的秒数，也就是配乐里的时间。
+// 每段的长度（秒）。换配乐后再按小节线微调。
 const CUTS = [
-  { at: 0, name: '开场', draw: open },
-  { at: 3.30, name: '标题', draw: title, enter: 'wipe' },
-  { at: 7.73, name: '人物介绍', draw: profile, enter: 'wipe' },
-  { at: 12.05, name: '#01', draw: chap('#01', '切换状态，动作不停', 'SEAMLESS TRANSITIONS'), enter: 'flash' },
-  { at: 13.26, name: '状态切换', draw: switching, enter: 'wipe' },
-  { at: 31.25, name: '#02', draw: chap('#02', '一直在动，看不出循环', 'NEVER GETS OLD'), enter: 'flash' },
-  { at: 32.46, name: '小动作', draw: variety, enter: 'wipe' },
-  { at: 40.84, name: '#03', draw: chap('#03', '两种形象', 'TWO LOOKS'), enter: 'flash' },
-  { at: 42.05, name: '形象', draw: looks, enter: 'wipe' },
-  { at: 46.86, name: '其余功能', draw: quick, enter: 'wipe' },
-  { at: 51.66, name: '结尾', draw: outro, enter: 'wipe' }
+  ['开场', 3.0, open],
+  ['标题', 4.5, title],
+  ['人物介绍', 3.6, profile],
+  ['状态切换', ROUND_DURS[0] + ROUND_DURS[1], switching],
+  ['小动作', 8.0, variety],
+  ['形象', 4.0, looks],
+  ['其余功能', 5.0, quick],
+  ['结尾', 6.5, outro]
 ]
-const END = 59.12 // 这一句音乐收尾的地方
-export const TIMELINE = CUTS.map((c, i) => ({ ...c, start: c.at, dur: (CUTS[i + 1]?.at ?? END) - c.at }))
-export const DURATION = END
+export const TIMELINE = []
+let acc = 0
+for (const [name, dur, draw] of CUTS) { TIMELINE.push({ name, dur, draw, start: acc, enter: acc ? 'wipe' : undefined }); acc += dur }
+export const DURATION = acc
 
 export function drawAt(ctx, t) {
   const i = Math.max(0, TIMELINE.findIndex(s => t < s.start + s.dur))
@@ -269,5 +251,4 @@ export function drawAt(ctx, t) {
   const next = TIMELINE[i + 1]
   if (next && next.enter === 'wipe' && t > next.start - 0.4) wipe(ctx, t - next.start, [C.orange, C.ink, C.cream], 0.4)
   if (s.enter === 'wipe' && t - s.start < 0.5) wipe(ctx, t - s.start, [C.orange, C.ink, C.cream], 0.4)
-  if (s.enter === 'flash') flash(ctx, t - s.start, 0, 0.2)
 }
