@@ -29,7 +29,7 @@ function chainAt(parts, lt) {
 function open(ctx, lt) {
   ctx.fillStyle = '#0e0d0c'
   ctx.fillRect(0, 0, W, H)
-  const line = typed('今天也要写代码吗？', lt, 0.3, 10)
+  const line = typed('Claude小姐现在在干嘛？', lt, 0.3, 10)
   text(ctx, line, W / 2, 560, { size: 72, weight: 700, color: C.cream, align: 'center' })
   ctx.font = `700 72px ${FONT.cjk}`
   const cw = ctx.measureText(line).width
@@ -48,7 +48,7 @@ function title(ctx, lt) {
   footage(ctx, A('idle-loop'), lt, lerp(W + 40, 1250, fk), 70, 880)
   popText(ctx, 'Claude-Chan', 120, 470, lt, 0.2, { size: 230, family: FONT.title, weight: 700, stretch: 'condensed',
     color: C.ink, stagger: 0.03, shadow: { color: C.orange, dx: 10, dy: 10 } })
-  popText(ctx, '陪你写代码的桌面小伙伴', 128, 600, lt, 0.75, { size: 72, color: C.ink, stagger: 0.035 })
+  popText(ctx, '看她就知道了', 128, 600, lt, 0.75, { size: 72, color: C.ink, stagger: 0.035 })
   text(ctx, '免费  ·  开源  ·  Windows', 132, 968, { size: 36, weight: 700, color: C.cream, alpha: prog(lt, 1.6, 0.5) })
 }
 
@@ -144,7 +144,7 @@ function variety(ctx, lt) {
   ctx.fillRect(0, 0, W, H)
   halftone(ctx, 0, H - 460, 760, 460, C.orange2, { dir: 'bl', step: 24, maxR: 9 })
   footage(ctx, A('idle-loop'), lt, 120, 100, 860)
-  popText(ctx, '一直在动，时不时还有小动作', 700, 250, lt, 0.1, { size: 66, stagger: 0.035 })
+  popText(ctx, '各种小动作，让她更加生动活泼', 700, 250, lt, 0.1, { size: 66, stagger: 0.035 })
   const ph = 540, pw = 540 * ph / 960
   ACTS.forEach((clip, k) => {
     const a = ease.back(prog(lt, 1.1 + k * 0.12, 0.4))
@@ -174,7 +174,7 @@ function looks(ctx, lt) {
 }
 
 // ---------- 其余功能，一笔带过 ----------
-const QUICK = ['后台在忙，她也知道', '开好几个 Claude 也不乱', '可以贴着 Claude 窗口走', '全屏时自己躲开', '不挡你点东西']
+const QUICK = ['待确认操作气泡提示，点击跳转会话', '后台任务运行状态显示', '多会话同时运行，优先显示待处理的', '跟随 Claude 桌面版窗口', '全屏应用时自动隐藏', '透明区域鼠标穿透']
 function quick(ctx, lt) {
   ctx.fillStyle = C.ink
   ctx.fillRect(0, 0, W, H)
@@ -233,7 +233,7 @@ const CUTS = [
   ['状态切换', ROUND_DURS[0] + ROUND_DURS[1], switching],
   ['小动作', 8.0, variety],
   ['形象', 4.0, looks],
-  ['其余功能', 5.0, quick],
+  ['其余功能', 5.8, quick],
   ['结尾', 6.5, outro]
 ]
 export const TIMELINE = []
