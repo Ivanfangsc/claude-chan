@@ -193,7 +193,7 @@ function terminal(ctx, ts, front, glow = null, glowFrom = 0) {
     const rx = x + 30 + (r.indent || 0)
     if (r.bg) { ctx.fillStyle = r.bg; ctx.fillRect(x + 22, yy - LH + 8, w - 60, LH) }
     if (glow !== null && r.t > glowFrom) {
-      ctx.fillStyle = `rgba(217,119,87,${0.32 * (1 - ease.out(glow / 0.9))})`
+      ctx.fillStyle = `rgba(217,119,87,${0.16 * (1 - ease.smooth(glow / 1.2))})`
       ctx.fillRect(x + 22, yy - LH + 8, w - 60, LH)
     }
     if (r.dot) { ctx.fillStyle = r.dot; ctx.beginPath(); ctx.arc(x + 40, yy - 7, 6, 0, Math.PI * 2); ctx.fill() }
@@ -249,7 +249,7 @@ function desktop(ctx, ts, her, { bubble = false, click = false, typing = false, 
   if (click) pointer(ctx, YES.x, YES.y, true)
 }
 
-// 她脚边的状态标签：每次切镜头弹一下，状态变了换字
+// 她脚边的状态标签：状态变了才换字、弹一下
 function stateTag(ctx, lt) {
   let label, since
   if (lt < OPEN_END) {
@@ -259,7 +259,11 @@ function stateTag(ctx, lt) {
   } else {
     let i = CUTS.length - 1
     while (i > 0 && CUTS[i].at > lt) i--
-    label = CUTS[i].tag; since = lt - CUTS[i].at
+    label = CUTS[i].tag
+    // 只在状态变了的那一镜弹出来，同一个状态里切镜头不动
+    let j = i
+    while (j > 0 && CUTS[j - 1].tag === label) j--
+    since = j === 0 && label === '思考' ? lt - (SUBMIT_AT - 0.55) : lt - CUTS[j].at
   }
   const pop = ease.back(prog(since, 0, 0.28))
   font(ctx, 34, FONT.cjk, 900)
@@ -290,9 +294,6 @@ export function storyScene(ctx, lt) {
     const c = CUTS[i]
     const prev = i > 0 ? CUTS[i - 1].ts : SUBMIT_AT + OPEN_END - 2.65
     desktop(ctx, c.ts, [[`adult/${c.her[0]}`, c.her[1] + lt - c.at]], { ...c, glow: lt - c.at, glowFrom: prev })
-    // 切点：很短的白闪
-    const k = (lt - c.at) / 0.14
-    if (k < 1) { ctx.fillStyle = `rgba(255,255,255,${0.22 * (1 - k)})`; ctx.fillRect(0, 0, W, H) }
   }
   stateTag(ctx, lt)
   // 说明：她是实机，其余是示意
