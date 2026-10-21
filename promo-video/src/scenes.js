@@ -1,7 +1,7 @@
 // 分镜（约 1 分钟）：先是一段真实使用的剧情（story.js：她的反应是插件真实会做的），再是标题、两种形象、其余功能、结尾。
 // 她出现的地方一律是实机帧原样播放，只缩放、放进画框，不加额外动作。
 
-import { C, FONT, H, W, ease, lerp, popText, prog, roundRect, text } from './core.js'
+import { C, FONT, H, W, ease, font, lerp, popText, prog, roundRect, text } from './core.js'
 import { footage, halftone, slab, speedLines, stripes, wipe } from './fx.js'
 import { STORY_DUR, storyScene } from './story.js'
 
@@ -21,7 +21,7 @@ function title(ctx, lt) {
   footage(ctx, A('idle-loop'), lt, lerp(W + 40, 1250, fk), 70, 880)
   popText(ctx, 'Claude-Chan', 120, 470, lt, 0.2, { size: 230, family: FONT.title, weight: 700, stretch: 'condensed',
     color: C.ink, stagger: 0.03, shadow: { color: C.orange, dx: 10, dy: 10 } })
-  popText(ctx, '看她就知道了', 128, 600, lt, 0.75, { size: 72, color: C.ink, stagger: 0.035 })
+  popText(ctx, '陪你写代码的桌面小伙伴', 128, 600, lt, 0.75, { size: 72, color: C.ink, stagger: 0.035 })
   text(ctx, '免费  ·  开源  ·  Windows', 132, 968, { size: 36, weight: 700, color: C.cream, alpha: prog(lt, 1.6, 0.5) })
 }
 
@@ -55,10 +55,23 @@ function looks(ctx, lt) {
   halftone(ctx, 0, 0, 900, 560, C.deep, { dir: 'tl', step: 24, maxR: 9 })
   halftone(ctx, W - 700, H - 460, 700, 460, C.orange2, { dir: 'br', step: 24, maxR: 9 })
   const a = ease.expo(prog(lt, 0.05, 0.5)), b = ease.expo(prog(lt, 0.2, 0.5))
-  footage(ctx, A('idle-loop'), lt, lerp(-500, 160, a), 120, 860)
-  footage(ctx, Q('idle-loop'), lt, lerp(W + 40, 1240, b), 120, 860)
-  popText(ctx, '原版', 660, 1010, lt, 0.4, { size: 64, color: C.ink })
-  popText(ctx, 'Q 版', 1250, 1040, lt, 0.55, { size: 64, color: C.ink })
+  const h = 820, w = 540 * h / 960, y = 70
+  footage(ctx, A('idle-loop'), lt, lerp(-500, 160, a), y, h)
+  footage(ctx, Q('idle-loop'), lt, lerp(W + 40, 1240, b), y, h)
+  // 标签：一样的深色胶囊，居中放在各自卡片正下方
+  ;[['原版', 160, 0.4], ['Q 版', 1240, 0.55]].forEach(([label, x, t0]) => {
+    const k = ease.back(prog(lt, t0, 0.35))
+    if (k <= 0) return
+    font(ctx, 52, FONT.cjk, 900)
+    const lw = ctx.measureText(label).width + 64
+    ctx.save()
+    ctx.translate(x + w / 2, y + h + 70)
+    ctx.scale(k, k)
+    ctx.fillStyle = C.ink
+    roundRect(ctx, -lw / 2, -38, lw, 76, 38); ctx.fill()
+    text(ctx, label, 0, 2, { size: 52, weight: 900, color: C.cream, align: 'center', baseline: 'middle' })
+    ctx.restore()
+  })
 }
 
 // ---------- 其余功能，一笔带过 ----------
@@ -149,14 +162,13 @@ export function cover(ctx) {
   slab(ctx, 1, C.ink, { y0: 892, y1: H })
   const x = SAFE + 40
   footage(ctx, A('idle-loop'), 0, W - SAFE - 30 - 540 * 960 / 960 * 0.98, 50, 940, { tag: false })
-  popText(ctx, 'Claude-Chan', x - 6, 290, 10, 0, { size: 166, family: FONT.title, weight: 700, stretch: 'condensed',
+  popText(ctx, 'Claude-Chan', x - 6, 350, 10, 0, { size: 166, family: FONT.title, weight: 700, stretch: 'condensed',
     color: C.ink, shadow: { color: C.orange, dx: 9, dy: 9 } })
-  text(ctx, 'Claude小姐现在在干嘛？', x, 450, { size: 72, weight: 900, color: C.ink })
-  ctx.font = `900 76px ${FONT.cjk}`
-  const ans = '看她就知道了'
-  const w = ctx.measureText(ans).width + 64
+  ctx.font = `900 64px ${FONT.cjk}`
+  const ans = '陪你写代码的桌面小伙伴'
+  const w = ctx.measureText(ans).width + 60
   ctx.fillStyle = C.orange
-  roundRect(ctx, x - 6, 508, w, 118, 18); ctx.fill()
-  text(ctx, ans, x + 26, 567, { size: 76, weight: 900, color: C.ink, baseline: 'middle' })
-  text(ctx, 'Claude Code 桌面伙伴 · 免费开源 · Windows', x, 996, { size: 35, weight: 900, color: C.cream })
+  roundRect(ctx, x - 6, 430, w, 110, 18); ctx.fill()
+  text(ctx, ans, x + 24, 487, { size: 64, weight: 900, color: C.ink, baseline: 'middle' })
+  text(ctx, 'Claude Code 插件 · 免费开源 · Windows', x, 996, { size: 35, weight: 900, color: C.cream })
 }
