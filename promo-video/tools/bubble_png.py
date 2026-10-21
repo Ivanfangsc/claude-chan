@@ -27,7 +27,7 @@ from claude_chan.state.ask import describe  # noqa: E402
 
 OUT = ROOT / "promo-video" / "frames"
 SCALE = 2
-WIN_W, WIN_H = 345, 613  # 她的窗口大小（默认）
+WIN_W, WIN_H = 483, 858  # 她的窗口大小：宣传片里放大到默认（345×613）的 1.4 倍，气泡跟着按比例变大，和桌宠里一样
 
 EVENT = {"hook_event_name": "PermissionRequest", "session_id": "story", "cwd": r"C:\work\shop-web",
          "tool_name": "Bash", "tool_input": {"command": "npm test -- login", "description": "Run login tests"}}

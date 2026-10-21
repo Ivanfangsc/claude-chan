@@ -14,29 +14,29 @@ const APPROVE_AT = STORY.approveAt // 选“允许”
 const PROMPT = '登录页点了没反应，帮我看看'
 
 // ---------- 分镜 ----------
+// 画面始终是同一个桌面、同一个构图，不缩放不移动；切的是工作状态：每一镜换终端内容和她的动作。
 // 片中时间都落在配乐《おしんこ》的小节 / 半小节上（一小节约 2.41 秒），22.83 主旋律进来时切到标题。
-// at：片中开始时间；frame：wide 整个桌面 / med 终端和她 / her 她的近景；ts：终端停在剧情的哪一刻；
-// cy：中景对准的高度（终端内容还少、都在顶上时往上移）；her：[片段, 从片段第几秒开始]；bubble：有没有气泡；click：鼠标按在“1. Yes”上
+// at：片中开始时间；ts：终端停在剧情的哪一刻；her：[片段, 从片段第几秒开始]；bubble：有没有气泡；click：鼠标按在“1. Yes”上
 const OPEN_END = 5.74
 const CUTS = [
-  { at: 5.74, frame: 'med', cy: 450, ts: 6.3, her: ['thinking-loop', 1.0] },
-  { at: 7.04, frame: 'her', her: ['thinking-to-reading', 1.7] },
-  { at: 8.34, frame: 'med', cy: 520, ts: 9.0, her: ['reading-loop', 1.0] },
-  { at: 9.6, frame: 'med', ts: 11.7, her: ['reading-loop', 3.4] },
-  { at: 10.87, frame: 'her', her: ['reading-to-writing', 2.0] },
-  { at: 12.07, frame: 'med', ts: 14.3, her: ['writing-loop', 0.8] },
-  { at: 13.26, frame: 'med', ts: 17.4, her: ['event-writing-ink', 4.0] },
-  { at: 14.46, frame: 'med', ts: 21.9, her: ['confirmation-intro', 2.4], bubble: true },
-  { at: 15.65, frame: 'her', her: ['event-confirmation-wave', 3.0], bubble: true },
-  { at: 16.85, frame: 'med', ts: 102.95, her: ['confirmation-loop', 2.0], bubble: true, click: true },
-  { at: 18.04, frame: 'med', ts: 105.8, her: ['confirmation-outro', 2.0] },
-  { at: 19.24, frame: 'med', ts: 107.3, her: ['complete-intro', 2.2] },
-  { at: 20.43, frame: 'her', her: ['complete-intro', 3.6] }
+  { at: 5.74, ts: 6.3, her: ['thinking-loop', 1.0] }, // 思考
+  { at: 7.04, ts: 8.0, her: ['thinking-to-reading', 1.7] }, // 开始读文件
+  { at: 8.34, ts: 9.6, her: ['reading-loop', 1.0] }, // 读代码
+  { at: 9.6, ts: 11.7, her: ['reading-loop', 3.4] },
+  { at: 10.87, ts: 13.2, her: ['reading-to-writing', 2.0] }, // 找到原因，开始改
+  { at: 12.07, ts: 14.9, her: ['writing-loop', 0.8] }, // 写代码
+  { at: 13.26, ts: 17.4, her: ['event-writing-ink', 4.0] },
+  { at: 14.46, ts: 21.9, her: ['confirmation-intro', 2.4], bubble: true }, // 要确认：冒气泡
+  { at: 15.65, ts: 60, her: ['event-confirmation-wave', 3.0], bubble: true }, // 还在等：招手
+  { at: 16.85, ts: 102.95, her: ['confirmation-loop', 2.0], bubble: true, click: true }, // 点“允许”
+  { at: 18.04, ts: 105.8, her: ['confirmation-outro', 2.0] }, // 测试通过
+  { at: 19.24, ts: 107.3, her: ['complete-intro', 2.2] }, // 修好了
+  { at: 20.43, ts: 108.5, her: ['complete-intro', 3.6] }
 ]
 export const STORY_DUR = 22.83
 
-// 她的窗口（默认大小 345×613），放在终端右边
-const HER = { x: 1110, y: 380, w: 345, h: 613 }
+// 她的窗口：放大到默认（345×613）的 1.4 倍，放在终端右边（气泡也按这个大小渲染）
+const HER = { x: 1290, y: 172, w: 483, h: 858 }
 function drawHer(ctx, clip, lt, alpha = 1) {
   const { n, fps } = info(clip)
   const bmp = frameAt(clip, Math.min(lt, (n - 1) / fps), false)
@@ -88,9 +88,9 @@ function taskbar(ctx) {
 }
 
 // ---------- 终端（Claude Code） ----------
-const TERM = { x: 70, y: 60, w: 1000, h: 900 }
-const TS = 21 // 字号
-const LH = 31 // 行高
+const TERM = { x: 40, y: 36, w: 1200, h: 970 }
+const TS = 25 // 字号
+const LH = 37 // 行高
 const WELCOME_H = 110, INPUT_H = 72, ASK_H = 9 * LH + 30, BOTTOM_PAD = 24
 const DIM = '#8b8b8b', FG = '#e6e6e6', ORANGE = '#d77757', GREEN = '#5fb870'
 
@@ -235,15 +235,9 @@ function pointer(ctx, x, y, down) {
 const YES = { x: TERM.x + 46 + 70, y: TERM.y + TERM.h - BOTTOM_PAD - ASK_H + 34 + 6 * LH - 7 }
 
 // ---------- 画面 ----------
-const FRAMES = {
-  wide: [W / 2, H / 2, 1],
-  med: [790, 600, 1.32],
-  her: [HER.x + HER.w / 2, HER.y + HER.h * 0.42, 1.7]
-}
-
-function desktop(ctx, ts, her, { bubble = false, click = false, typing = false, noTerm = false } = {}) {
+function desktop(ctx, ts, her, { bubble = false, click = false, typing = false } = {}) {
   wallpaper(ctx)
-  if (!noTerm) terminal(ctx, ts, typing)
+  terminal(ctx, ts, typing)
   for (const h of her) drawHer(ctx, ...h)
   if (bubble) drawBubble(ctx)
   taskbar(ctx)
@@ -251,39 +245,25 @@ function desktop(ctx, ts, her, { bubble = false, click = false, typing = false, 
 }
 
 export function storyScene(ctx, lt) {
-  let frame, ts, her, cyOver, opts = {}
   if (lt < OPEN_END) {
     // 开头连着拍：打字、回车，她从待机交叉淡化进思考（和桌宠一样：待机一有动静就立刻离开）
-    frame = 'wide'
-    ts = lt + 0.55 // 片中 2.65 秒（一拍上）回车 = 剧情里的 SUBMIT_AT
+    const ts = lt + 0.55 // 片中 2.65 秒（一拍上）回车 = 剧情里的 SUBMIT_AT
     const go = SUBMIT_AT - 0.55
-    her = lt < go ? [['adult/idle-loop', lt + 1.2]]
+    const her = lt < go ? [['adult/idle-loop', lt + 1.2]]
       : lt < go + 0.15 ? [['adult/idle-loop', lt + 1.2], ['adult/thinking-intro', lt - go, (lt - go) / 0.15]]
         : [['adult/thinking-intro', lt - go]]
-    opts.typing = true
+    desktop(ctx, ts, her, { typing: true })
   } else {
     let i = CUTS.length - 1
     while (i > 0 && CUTS[i].at > lt) i--
     const c = CUTS[i]
-    frame = c.frame
-    ts = c.ts ?? 0
-    her = [[`adult/${c.her[0]}`, c.her[1] + lt - c.at]]
-    opts = { bubble: c.bubble, click: c.click, noTerm: frame === 'her' } // 近景只拍她
-    cyOver = c.cy
+    desktop(ctx, c.ts, [[`adult/${c.her[0]}`, c.her[1] + lt - c.at]], c)
   }
-  const [cx, cy0, z] = FRAMES[frame]
-  const cy = cyOver ?? cy0
-  ctx.save()
-  ctx.translate(W / 2, H / 2)
-  ctx.scale(z, z)
-  ctx.translate(-Math.min(Math.max(cx, W / 2 / z), W - W / 2 / z), -Math.min(Math.max(cy, H / 2 / z), H - H / 2 / z))
-  desktop(ctx, ts, her, opts)
-  ctx.restore()
   // 说明：她是实机，其余是示意
   font(ctx, 20, FONT.cjk, 700)
   const note = '她的动作和气泡为实机画面 · 桌面与终端为示意'
   const nw = ctx.measureText(note).width + 36
   ctx.fillStyle = 'rgba(20,20,20,0.72)'
-  roundRect(ctx, 28, H - 70, nw, 40, 20); ctx.fill()
-  text(ctx, note, 46, H - 43, { size: 20, weight: 700, color: '#eee' })
+  roundRect(ctx, W - nw - 28, 24, nw, 40, 20); ctx.fill()
+  text(ctx, note, W - nw - 10, 51, { size: 20, weight: 700, color: '#eee' })
 }
