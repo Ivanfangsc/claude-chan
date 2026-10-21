@@ -254,22 +254,26 @@ export function drawAt(ctx, t) {
 }
 
 // ---------- 封面（不在时间线里，render.mjs --cover 单独导出）----------
-// 缩成小图也要看得清：字大、只有三行；她用实机帧，放在右边，避开右下角的时长角标
+// 16:9 和 4:3 共用一张：4:3 是从中间裁出 1440 宽（x 240–1680），字和她都放在这一块里，两边只有装饰。
+// 缩成小图也要看得清：字大、只有三行；她用实机帧
+const SAFE = (W - H * 4 / 3) / 2 // 240
 export function cover(ctx) {
   ctx.fillStyle = C.cream
   ctx.fillRect(0, 0, W, H)
-  halftone(ctx, 0, 0, 1000, 640, C.orange2, { dir: 'tl', step: 26, maxR: 10 })
+  halftone(ctx, 0, 0, 1100, 640, C.orange2, { dir: 'tl', step: 26, maxR: 10 })
+  halftone(ctx, W - 520, 0, 520, 860, C.orange2, { dir: 'tr', step: 26, maxR: 10 })
   slab(ctx, 1, C.orange, { y0: 862, y1: 892 })
   slab(ctx, 1, C.ink, { y0: 892, y1: H })
-  footage(ctx, A('idle-loop'), 0, 1190, 40, 990, { tag: false })
-  popText(ctx, 'Claude-Chan', 96, 290, 10, 0, { size: 196, family: FONT.title, weight: 700, stretch: 'condensed',
-    color: C.ink, shadow: { color: C.orange, dx: 10, dy: 10 } })
-  text(ctx, 'Claude小姐现在在干嘛？', 104, 470, { size: 84, weight: 900, color: C.ink })
-  ctx.font = `900 84px ${FONT.cjk}`
+  const x = SAFE + 40
+  footage(ctx, A('idle-loop'), 0, W - SAFE - 30 - 540 * 960 / 960 * 0.98, 50, 940, { tag: false })
+  popText(ctx, 'Claude-Chan', x - 6, 290, 10, 0, { size: 166, family: FONT.title, weight: 700, stretch: 'condensed',
+    color: C.ink, shadow: { color: C.orange, dx: 9, dy: 9 } })
+  text(ctx, 'Claude小姐现在在干嘛？', x, 450, { size: 72, weight: 900, color: C.ink })
+  ctx.font = `900 76px ${FONT.cjk}`
   const ans = '看她就知道了'
-  const w = ctx.measureText(ans).width + 72
+  const w = ctx.measureText(ans).width + 64
   ctx.fillStyle = C.orange
-  roundRect(ctx, 96, 530, w, 130, 20); ctx.fill()
-  text(ctx, ans, 132, 595, { size: 84, weight: 900, color: C.ink, baseline: 'middle' })
-  text(ctx, 'Claude Code 桌面伙伴 · 免费开源 · Windows', 104, 1000, { size: 44, weight: 900, color: C.cream })
+  roundRect(ctx, x - 6, 508, w, 118, 18); ctx.fill()
+  text(ctx, ans, x + 26, 567, { size: 76, weight: 900, color: C.ink, baseline: 'middle' })
+  text(ctx, 'Claude Code 桌面伙伴 · 免费开源 · Windows', x, 996, { size: 35, weight: 900, color: C.cream })
 }
