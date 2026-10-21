@@ -1,86 +1,57 @@
-// 剧情：一个人用 Claude Code 修 bug，中途跑去看视频。桌面、终端、浏览器、鼠标是示意，用代码画；
-// 她的每一帧按 story.json 播放——那是 tools/simulate.py 把同一串 hook 事件喂给插件真实的会话汇总和动画引擎算出来的，
-// 所以她什么时候转身、播哪一段、招不招手，都和桌宠里一样。气泡是插件的气泡组件渲染的图（tools/bubble_png.py）。
-//
-// 片子分两个镜头，中间跳过她等你确认的一分多钟（直接切，任务栏时钟往前走，画面上写“过了一会儿”）。
-// 每个镜头内部是连续的真实时间。
+// 剧情：一个人用 Claude Code 修 bug。先连着拍几秒（打字、回车、她开始思考），之后按配乐的拍子快切：
+// 每一镜是终端的一个状态 + 她在对应状态里的一小段实机画面（不放完整段，只取最有动感的一两秒）。
+// 桌面和终端是示意，用代码画；终端内容按 story.json（tools/simulate.py 生成的事件时间线）走，
+// 她的帧原样播放；气泡是插件的气泡组件渲染的图（tools/bubble_png.py）。
 
-import { C, FONT, H, W, clamp, ease, font, lerp, prog, roundRect, text, typed } from './core.js'
+import { C, FONT, H, W, font, roundRect, text, typed } from './core.js'
 import { frameAt, info } from './assets.js'
 import STORY from './story.json' with { type: 'json' }
 import BUBBLE from '../frames/bubble.json' with { type: 'json' }
 
-// ---------- 剪辑：片中时间 → 剧情时间 ----------
-export const SHOTS = [
-  { s0: 0, s1: 25.0 }, // 打字 → 思考 → 读代码 → 写代码 → 要确认，冒气泡
-  { s0: 101.2, s1: 121.3 } // 她在招手 → 用户点气泡、允许 → 测试通过 → 完成
-]
-SHOTS[0].f0 = 0
-SHOTS[1].f0 = SHOTS[0].s1 - SHOTS[0].s0
-export const STORY_DUR = SHOTS[1].f0 + SHOTS[1].s1 - SHOTS[1].s0
-
-// 用户的动作（剧情时间）：和 simulate.py 的事件对得上
-const TYPE_AT = 0.9 // 开始打字
-const SUBMIT_AT = 3.2 // 回车（UserPromptSubmit）
-const BROWSER_AT = 8.6 // 切到浏览器看视频
-const NOTICE_AT = 101.6 // 看到她在招手
-const BUBBLE_CLICK_AT = 102.2 // 点气泡 → 终端回到最前面
+const TYPE_AT = 0.9 // 开始打字（剧情时间）
+const SUBMIT_AT = 3.2 // 回车
 const APPROVE_AT = STORY.approveAt // 选“允许”
 const PROMPT = '登录页点了没反应，帮我看看'
 
-// ---------- 她：按引擎记录播放 ----------
-const CLIPS = STORY.clips
-const XFADE = 0.15
-// 剧情时间 ts 时这一段播到片段内第几秒（按记录的速度积分）
-function localTime(c, ts) {
-  let lt = 0
-  for (let i = 0; i < c.rates.length; i++) {
-    const [t0, r] = c.rates[i]
-    const t1 = i + 1 < c.rates.length ? c.rates[i + 1][0] : Infinity
-    if (ts <= t0) break
-    lt += (Math.min(ts, t1) - t0) * r
-  }
-  return lt
-}
-function herAt(ts) {
-  let i = CLIPS.length - 1
-  while (i > 0 && CLIPS[i].t > ts) i--
-  const cur = CLIPS[i]
-  const out = [{ clip: `adult/${cur.clip}`, lt: localTime(cur, ts), alpha: 1 }]
-  if (cur.xfade && i > 0 && ts - cur.t < XFADE) {
-    const prev = CLIPS[i - 1]
-    out[0].alpha = (ts - cur.t) / XFADE
-    out.unshift({ clip: `adult/${prev.clip}`, lt: localTime(prev, ts), alpha: 1 })
-  }
-  return out
-}
+// ---------- 分镜 ----------
+// 片中时间都落在配乐《おしんこ》的小节 / 半小节上（一小节约 2.41 秒），22.83 主旋律进来时切到标题。
+// at：片中开始时间；frame：wide 整个桌面 / med 终端和她 / her 她的近景；ts：终端停在剧情的哪一刻；
+// cy：中景对准的高度（终端内容还少、都在顶上时往上移）；her：[片段, 从片段第几秒开始]；bubble：有没有气泡；click：鼠标按在“1. Yes”上
+const OPEN_END = 5.74
+const CUTS = [
+  { at: 5.74, frame: 'med', cy: 450, ts: 6.3, her: ['thinking-loop', 1.0] },
+  { at: 7.04, frame: 'her', her: ['thinking-to-reading', 1.7] },
+  { at: 8.34, frame: 'med', cy: 520, ts: 9.0, her: ['reading-loop', 1.0] },
+  { at: 9.6, frame: 'med', ts: 11.7, her: ['reading-loop', 3.4] },
+  { at: 10.87, frame: 'her', her: ['reading-to-writing', 2.0] },
+  { at: 12.07, frame: 'med', ts: 14.3, her: ['writing-loop', 0.8] },
+  { at: 13.26, frame: 'med', ts: 17.4, her: ['event-writing-ink', 4.0] },
+  { at: 14.46, frame: 'med', ts: 21.9, her: ['confirmation-intro', 2.4], bubble: true },
+  { at: 15.65, frame: 'her', her: ['event-confirmation-wave', 3.0], bubble: true },
+  { at: 16.85, frame: 'med', ts: 102.95, her: ['confirmation-loop', 2.0], bubble: true, click: true },
+  { at: 18.04, frame: 'med', ts: 105.8, her: ['confirmation-outro', 2.0] },
+  { at: 19.24, frame: 'med', ts: 107.3, her: ['complete-intro', 2.2] },
+  { at: 20.43, frame: 'her', her: ['complete-intro', 3.6] }
+]
+export const STORY_DUR = 22.83
 
-// 她的窗口（默认大小 345×613），贴在桌面右下角
-const HER = { x: 1530, y: 400, w: 345, h: 613 }
-function drawHer(ctx, ts) {
-  for (const { clip, lt, alpha } of herAt(ts)) {
-    const { n, fps } = info(clip)
-    const bmp = frameAt(clip, Math.min(lt, (n - 1) / fps), false)
-    if (!bmp) continue
-    ctx.save()
-    ctx.globalAlpha = alpha
-    ctx.drawImage(bmp, HER.x, HER.y, HER.w, HER.h)
-    ctx.restore()
-  }
-}
-
-// 气泡：她在“等你确认”的目标上时显示（和桌宠一样，跟着目标走，不等动画）
-const bubbleImg = new Image()
-export const bubbleReady = new Promise(r => { bubbleImg.onload = r; bubbleImg.src = 'frames/bubble.png' })
-function drawBubble(ctx, ts) {
-  if (ts < STORY.askAt || ts >= APPROVE_AT) return
-  const a = prog(ts, STORY.askAt, 0.12)
+// 她的窗口（默认大小 345×613），放在终端右边
+const HER = { x: 1110, y: 380, w: 345, h: 613 }
+function drawHer(ctx, clip, lt, alpha = 1) {
+  const { n, fps } = info(clip)
+  const bmp = frameAt(clip, Math.min(lt, (n - 1) / fps), false)
+  if (!bmp) return
   ctx.save()
-  ctx.globalAlpha = a
-  ctx.drawImage(bubbleImg, HER.x + BUBBLE.dx, HER.y + BUBBLE.dy, BUBBLE.w, BUBBLE.h)
+  ctx.globalAlpha = alpha
+  ctx.drawImage(bmp, HER.x, HER.y, HER.w, HER.h)
   ctx.restore()
 }
-const BUBBLE_RECT = { x: HER.x + BUBBLE.dx, y: HER.y + BUBBLE.dy, w: BUBBLE.w, h: BUBBLE.h - 9 }
+
+const bubbleImg = new Image()
+export const bubbleReady = new Promise(r => { bubbleImg.onload = r; bubbleImg.src = 'frames/bubble.png' })
+function drawBubble(ctx) {
+  ctx.drawImage(bubbleImg, HER.x + BUBBLE.dx, HER.y + BUBBLE.dy, BUBBLE.w, BUBBLE.h)
+}
 
 // ---------- 桌面 ----------
 function wallpaper(ctx) {
@@ -98,7 +69,8 @@ function wallpaper(ctx) {
 }
 
 const TASKBAR = 48
-function taskbar(ctx, ts, active) {
+function taskbar(ctx) {
+  const active = 'term'
   ctx.fillStyle = 'rgba(32,32,36,0.92)'
   ctx.fillRect(0, H - TASKBAR, W, TASKBAR)
   const icons = [['term', '#2b2b2b'], ['browser', '#3a7bd5']]
@@ -111,16 +83,12 @@ function taskbar(ctx, ts, active) {
     ctx.fillStyle = id === active ? '#9ecbff' : '#888'
     roundRect(ctx, x + (id === active ? 8 : 12), H - 5, id === active ? 16 : 8, 3, 1.5); ctx.fill()
   })
-  // 时钟：真实时间往前走
-  const base = 14 * 60 + 2 // 14:02 开始
-  const min = base + Math.floor((ts + 25) / 60)
-  const hh = String(Math.floor(min / 60)).padStart(2, '0'), mm = String(min % 60).padStart(2, '0')
-  text(ctx, `${hh}:${mm}`, W - 70, H - 28, { size: 14, family: '"Segoe UI", sans-serif', weight: 400, color: '#eee', align: 'center' })
+  text(ctx, '14:02', W - 70, H - 28, { size: 14, family: '"Segoe UI", sans-serif', weight: 400, color: '#eee', align: 'center' })
   text(ctx, '2026/10/20', W - 70, H - 10, { size: 13, family: '"Segoe UI", sans-serif', weight: 400, color: '#ccc', align: 'center' })
 }
 
 // ---------- 终端（Claude Code） ----------
-const TERM = { x: 70, y: 60, w: 1120, h: 900 }
+const TERM = { x: 70, y: 60, w: 1000, h: 900 }
 const TS = 21 // 字号
 const LH = 31 // 行高
 const WELCOME_H = 110, INPUT_H = 72, ASK_H = 9 * LH + 30, BOTTOM_PAD = 24
@@ -251,132 +219,71 @@ function terminal(ctx, ts, front) {
   ctx.restore()
 }
 
-// ---------- 浏览器（看视频） ----------
-const BROWSER = { x: 600, y: 90, w: 880, h: 820 }
-function browser(ctx, ts, front) {
-  const { x, y, w, h } = BROWSER
+// 鼠标指针
+function pointer(ctx, x, y, down) {
   ctx.save()
-  ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12
-  ctx.fillStyle = '#f4f4f5'
-  roundRect(ctx, x, y, w, h, 10); ctx.fill()
-  ctx.restore()
-  ctx.fillStyle = front ? '#e3e3e6' : '#ececee'
-  roundRect(ctx, x, y, w, 84, [10, 10, 0, 0]); ctx.fill()
-  ctx.fillStyle = '#fff'
-  roundRect(ctx, x + 12, y + 8, 260, 34, [8, 8, 0, 0]); ctx.fill()
-  text(ctx, '海边的一个下午 - 视频', x + 30, y + 31, { size: 15, weight: 500, color: '#333' })
-  ctx.fillStyle = '#fff'
-  roundRect(ctx, x + 80, y + 48, w - 120, 28, 14); ctx.fill()
-  text(ctx, 'video.example.com/watch/sea-afternoon', x + 100, y + 67, { size: 14, family: '"Segoe UI", sans-serif', weight: 400, color: '#555' })
-  // 播放器：缓慢流动的海
-  const px = x + 30, py = y + 110, pw = w - 60, ph = pw * 9 / 16
-  ctx.save()
-  roundRect(ctx, px, py, pw, ph, 8); ctx.clip()
-  const g = ctx.createLinearGradient(px, py, px, py + ph)
-  g.addColorStop(0, '#f6c79a'); g.addColorStop(0.45, '#f2a477'); g.addColorStop(0.46, '#3f7fa3'); g.addColorStop(1, '#1d4863')
-  ctx.fillStyle = g; ctx.fillRect(px, py, pw, ph)
-  ctx.fillStyle = 'rgba(255,240,210,0.9)'
-  ctx.beginPath(); ctx.arc(px + pw * 0.68, py + ph * 0.36, 34, 0, Math.PI * 2); ctx.fill()
-  for (let k = 0; k < 7; k++) {
-    ctx.strokeStyle = `rgba(255,255,255,${0.12 + k * 0.03})`; ctx.lineWidth = 2
-    ctx.beginPath()
-    for (let xx = 0; xx <= pw; xx += 20) {
-      const yy = py + ph * (0.52 + k * 0.065) + 5 * Math.sin(xx / 70 + ts * (0.8 + k * 0.15) + k)
-      xx ? ctx.lineTo(px + xx, yy) : ctx.moveTo(px + xx, yy)
-    }
-    ctx.stroke()
-  }
-  ctx.restore()
-  // 进度条
-  const p = clamp(0.18 + (ts - BROWSER_AT) / 600, 0, 1)
-  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(px + 16, py + ph - 18, pw - 32, 4)
-  ctx.fillStyle = '#fb7299'; ctx.fillRect(px + 16, py + ph - 18, (pw - 32) * p, 4)
-  text(ctx, '海边的一个下午｜4K 白噪音', px, py + ph + 44, { size: 24, weight: 700, color: '#18191c' })
-  text(ctx, '12.4 万播放 · 2 天前', px, py + ph + 78, { size: 16, weight: 400, color: '#9499a0' })
-  ctx.fillStyle = '#e3e5e7'
-  for (let i = 0; i < 3; i++) { roundRect(ctx, px, py + ph + 110 + i * 40, pw * (0.9 - i * 0.2), 16, 8); ctx.fill() }
-}
-
-// ---------- 鼠标 ----------
-// 确认框里“1. Yes”那一行（和 terminal() 里确认框的位置一致）
-const ASK_BOX_Y = TERM.y + TERM.h - BOTTOM_PAD - ASK_H  // 到这时内容已经满屏，确认框贴着底
-const YES = { x: TERM.x + 46 + 70, y: ASK_BOX_Y + 34 + 6 * LH - 7 }
-// 用户的鼠标：[剧情时间, x, y, 是否按下]
-const MOUSE = [
-  [0, 900, 820], [BROWSER_AT - 0.7, 980, 1040], [BROWSER_AT - 0.1, 984, H - 24, 1], [BROWSER_AT + 0.4, 1060, 520],
-  [NOTICE_AT - 2, 1060, 520], [NOTICE_AT, 1080, 520],
-  [BUBBLE_CLICK_AT - 0.35, BUBBLE_RECT.x + 150, BUBBLE_RECT.y + 50], [BUBBLE_CLICK_AT, BUBBLE_RECT.x + 150, BUBBLE_RECT.y + 52, 1],
-  [APPROVE_AT - 0.35, YES.x, YES.y], [APPROVE_AT, YES.x, YES.y, 1], [APPROVE_AT + 1.5, 380, 720]
-]
-function mouseAt(ts) {
-  let i = 0
-  while (i < MOUSE.length - 1 && MOUSE[i + 1][0] <= ts) i++
-  const a = MOUSE[i], b = MOUSE[i + 1]
-  if (!b) return { x: a[1], y: a[2], down: false }
-  const k = ease.inOut((ts - a[0]) / (b[0] - a[0]))
-  const down = (a[3] && ts - a[0] < 0.15) || false
-  return { x: lerp(a[1], b[1], k), y: lerp(a[2], b[2], k), down }
-}
-function mouse(ctx, ts) {
-  const m = mouseAt(ts)
-  ctx.save()
-  ctx.translate(m.x, m.y)
-  const s = m.down ? 0.9 : 1
-  ctx.scale(s * 1.1, s * 1.1)
+  ctx.translate(x, y)
+  const s = down ? 0.99 : 1.1
+  ctx.scale(s, s)
   ctx.fillStyle = '#fff'; ctx.strokeStyle = '#111'; ctx.lineWidth = 1.6
   ctx.beginPath()
   ctx.moveTo(0, 0); ctx.lineTo(0, 24); ctx.lineTo(6.5, 18.5); ctx.lineTo(11, 28); ctx.lineTo(15, 26); ctx.lineTo(10.5, 17); ctx.lineTo(18, 17)
   ctx.closePath(); ctx.fill(); ctx.stroke()
   ctx.restore()
 }
+// 确认框里“1. Yes”那一行：到确认时内容已经满屏，确认框贴着终端底边
+const YES = { x: TERM.x + 46 + 70, y: TERM.y + TERM.h - BOTTOM_PAD - ASK_H + 34 + 6 * LH - 7 }
 
-// ---------- 整个桌面 ----------
-function desktop(ctx, ts) {
-  wallpaper(ctx)
-  const termFront = ts < BROWSER_AT || ts >= BUBBLE_CLICK_AT
-  const showBrowser = ts >= BROWSER_AT
-  if (termFront) {
-    if (showBrowser) browser(ctx, ts, false)
-    terminal(ctx, ts, true)
-  } else {
-    terminal(ctx, ts, false)
-    browser(ctx, ts, true)
-  }
-  drawHer(ctx, ts)
-  drawBubble(ctx, ts)
-  taskbar(ctx, ts, termFront ? 'term' : 'browser')
-  mouse(ctx, ts)
+// ---------- 画面 ----------
+const FRAMES = {
+  wide: [W / 2, H / 2, 1],
+  med: [790, 600, 1.32],
+  her: [HER.x + HER.w / 2, HER.y + HER.h * 0.42, 1.7]
 }
 
-// ---------- 剪辑 ----------
-// 固定看整个桌面，不推拉。两个镜头之间直接切，第二个镜头开头叠一行“过了一会儿”（任务栏时钟也往前走了）。
-function storyTime(lt) {
-  for (const s of SHOTS) if (lt >= s.f0 && lt < s.f0 + s.s1 - s.s0) return s.s0 + lt - s.f0
-  return SHOTS[1].s1
+function desktop(ctx, ts, her, { bubble = false, click = false, typing = false, noTerm = false } = {}) {
+  wallpaper(ctx)
+  if (!noTerm) terminal(ctx, ts, typing)
+  for (const h of her) drawHer(ctx, ...h)
+  if (bubble) drawBubble(ctx)
+  taskbar(ctx)
+  if (click) pointer(ctx, YES.x, YES.y, true)
 }
 
 export function storyScene(ctx, lt) {
-  const ts = storyTime(lt)
-  desktop(ctx, ts)
+  let frame, ts, her, cyOver, opts = {}
+  if (lt < OPEN_END) {
+    // 开头连着拍：打字、回车，她从待机交叉淡化进思考（和桌宠一样：待机一有动静就立刻离开）
+    frame = 'wide'
+    ts = lt + 0.55 // 片中 2.65 秒（一拍上）回车 = 剧情里的 SUBMIT_AT
+    const go = SUBMIT_AT - 0.55
+    her = lt < go ? [['adult/idle-loop', lt + 1.2]]
+      : lt < go + 0.15 ? [['adult/idle-loop', lt + 1.2], ['adult/thinking-intro', lt - go, (lt - go) / 0.15]]
+        : [['adult/thinking-intro', lt - go]]
+    opts.typing = true
+  } else {
+    let i = CUTS.length - 1
+    while (i > 0 && CUTS[i].at > lt) i--
+    const c = CUTS[i]
+    frame = c.frame
+    ts = c.ts ?? 0
+    her = [[`adult/${c.her[0]}`, c.her[1] + lt - c.at]]
+    opts = { bubble: c.bubble, click: c.click, noTerm: frame === 'her' } // 近景只拍她
+    cyOver = c.cy
+  }
+  const [cx, cy0, z] = FRAMES[frame]
+  const cy = cyOver ?? cy0
+  ctx.save()
+  ctx.translate(W / 2, H / 2)
+  ctx.scale(z, z)
+  ctx.translate(-Math.min(Math.max(cx, W / 2 / z), W - W / 2 / z), -Math.min(Math.max(cy, H / 2 / z), H - H / 2 / z))
+  desktop(ctx, ts, her, opts)
+  ctx.restore()
   // 说明：她是实机，其余是示意
   font(ctx, 20, FONT.cjk, 700)
   const note = '她的动作和气泡为实机画面 · 桌面与终端为示意'
   const nw = ctx.measureText(note).width + 36
   ctx.fillStyle = 'rgba(20,20,20,0.72)'
-  roundRect(ctx, 28, H - TASKBAR - 56, nw, 40, 20); ctx.fill()
-  text(ctx, note, 46, H - TASKBAR - 29, { size: 20, weight: 700, color: '#eee' })
-  // 第二个镜头开头：过了一会儿
-  const since = lt - SHOTS[1].f0
-  if (since >= 0 && since < 1.8) {
-    const a = since < 1.4 ? 1 : 1 - (since - 1.4) / 0.4
-    font(ctx, 40, FONT.cjk, 900)
-    const label = '过了一会儿……'
-    const lw = ctx.measureText(label).width + 64
-    ctx.save()
-    ctx.globalAlpha = a
-    ctx.fillStyle = 'rgba(20,20,20,0.82)'
-    roundRect(ctx, W / 2 - lw / 2, 40, lw, 72, 36); ctx.fill()
-    text(ctx, label, W / 2, 90, { size: 40, weight: 900, color: C.cream, align: 'center' })
-    ctx.restore()
-  }
+  roundRect(ctx, 28, H - 70, nw, 40, 20); ctx.fill()
+  text(ctx, note, 46, H - 43, { size: 20, weight: 700, color: '#eee' })
 }

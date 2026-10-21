@@ -24,8 +24,8 @@ CLIPS = [
     ("adult", "event-waiting-watch", 960), ("adult", "drowsy-loop", 960), ("adult", "event-drowsy-bubble", 960),
     ("adult", "thinking-intro", 960), ("adult", "confirmation-intro", 960), ("adult", "complete-intro", 960),
     ("adult", "thinking-to-reading", 960), ("adult", "reading-to-writing", 960), ("adult", "writing-to-thinking", 960),
-    ("adult", "event-idle-tea", 960), ("adult", "event-idle-flower", 960), ("adult", "event-writing-ink", 480),
-    ("adult", "event-confirmation-wave", 480), ("adult", "event-idle-gaze", 960), ("adult", "event-thinking-ponder", 480),
+    ("adult", "event-idle-tea", 960), ("adult", "event-idle-flower", 960), ("adult", "event-writing-ink", 960),
+    ("adult", "event-confirmation-wave", 960), ("adult", "event-idle-gaze", 960), ("adult", "event-thinking-ponder", 960),
     ("chibi", "idle-loop", 960), ("chibi", "error-intro", 960), ("chibi", "complete-loop", 960),
     ("chibi", "event-idle-stretch", 480), ("chibi", "event-waiting-watch", 480),
 ]

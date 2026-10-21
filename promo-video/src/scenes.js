@@ -25,6 +25,27 @@ function title(ctx, lt) {
   text(ctx, '免费  ·  开源  ·  Windows', 132, 968, { size: 36, weight: 700, color: C.cream, alpha: prog(lt, 1.6, 0.5) })
 }
 
+// ---------- 小动作：插在摇晃里 ----------
+const ACTS = [A('event-idle-tea'), A('event-idle-flower'), A('event-idle-gaze')]
+function variety(ctx, lt) {
+  ctx.fillStyle = C.paper
+  ctx.fillRect(0, 0, W, H)
+  halftone(ctx, 0, H - 460, 760, 460, C.orange2, { dir: 'bl', step: 24, maxR: 9 })
+  footage(ctx, A('idle-loop'), lt, 120, 100, 860)
+  popText(ctx, '各种小动作，让她更加生动活泼', 700, 250, lt, 0.1, { size: 66, stagger: 0.035 })
+  const ph = 540, pw = 540 * ph / 960
+  ACTS.forEach((clip, k) => {
+    const a = ease.back(prog(lt, 0.5 + k * 0.12, 0.4))
+    if (a <= 0) return
+    const x = 704 + k * (pw + 70), y = 400
+    ctx.save()
+    ctx.translate(x + pw / 2, y + ph / 2); ctx.scale(a, a); ctx.translate(-x - pw / 2, -y - ph / 2)
+    // 小动作本身就是从摇晃里接出去、再接回摇晃的一段；从动作开始的地方播
+    footage(ctx, clip, Math.max(0, lt - 0.5) + 1.2, x, y, ph, { tag: false })
+    ctx.restore()
+  })
+}
+
 // ---------- #03 两种形象 ----------
 function looks(ctx, lt) {
   ctx.fillStyle = C.cream
@@ -87,18 +108,20 @@ function outro(ctx, lt) {
   const cr = prog(lt, 1.6, 0.6)
   text(ctx, '人设：ZipZipPipe　·　特别感谢：黑鹤001　·　角色动画由 AI 生成', W / 2, 960, { size: 24, weight: 500, color: C.mute, align: 'center', alpha: cr })
   text(ctx, '非 Anthropic 官方作品。Claude 是 Anthropic, PBC 的商标。', W / 2, 1004, { size: 24, weight: 500, color: C.mute, align: 'center', alpha: cr })
-  const out = prog(lt, 4.9, 1.1)
+  const out = prog(lt, 3.8, 1.0)
   if (out > 0) { ctx.fillStyle = `rgba(0,0,0,${out})`; ctx.fillRect(0, 0, W, H) }
 }
 
 // ---------- 时间线 ----------
-// 每段的长度（秒）。配乐还没按新剪辑对过小节。
+// 每段的长度（秒），按配乐《おしんこ》对过：约 99 BPM，一小节 2.41 秒，四小节一个乐句。
+// 剧情快切的每一镜落在小节 / 半小节上，标题在主旋律进来时（22.83）出现，之后每段两小节左右。
 const CUTS = [
   ['剧情', STORY_DUR, storyScene],
-  ['标题', 4.5, title],
-  ['形象', 3.6, looks],
-  ['其余功能', 6.0, quick],
-  ['结尾', 6.0, outro]
+  ['标题', 4.82, title],
+  ['小动作', 4.81, variety],
+  ['形象', 3.58, looks],
+  ['其余功能', 6.01, quick],
+  ['结尾', 4.81, outro]
 ]
 export const TIMELINE = []
 let acc = 0
