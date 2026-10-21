@@ -1,0 +1,770 @@
+{
+ "seed": 24,
+ "end": 133.0,
+ "askAt": 21.7,
+ "approveAt": 103.0,
+ "clips": [
+  {
+   "t": 0.0,
+   "clip": "idle-loop-2",
+   "xfade": false,
+   "rates": [
+    [
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     0.9619110264345421
+    ]
+   ]
+  },
+  {
+   "t": 3.2,
+   "clip": "thinking-intro",
+   "xfade": true,
+   "rates": [
+    [
+     3.2,
+     0.9619110264345421
+    ],
+    [
+     3.2,
+     1.0
+    ]
+   ]
+  },
+  {
+   "t": 8.3667,
+   "clip": "thinking-to-reading",
+   "xfade": false,
+   "rates": [
+    [
+     8.3667,
+     1.0
+    ]
+   ]
+  },
+  {
+   "t": 13.5333,
+   "clip": "reading-to-writing",
+   "xfade": false,
+   "rates": [
+    [
+     13.5333,
+     1.0
+    ]
+   ]
+  },
+  {
+   "t": 18.7,
+   "clip": "writing-loop-2",
+   "xfade": false,
+   "rates": [
+    [
+     18.7,
+     1.0
+    ],
+    [
+     18.7,
+     1.0319131338709995
+    ]
+   ]
+  },
+  {
+   "t": 21.7,
+   "clip": "writing-outro",
+   "xfade": true,
+   "rates": [
+    [
+     21.7,
+     1.0319131338709995
+    ],
+    [
+     21.7,
+     1.0
+    ]
+   ]
+  },
+  {
+   "t": 26.8667,
+   "clip": "hub-B-to-A",
+   "xfade": false,
+   "rates": [
+    [
+     26.8667,
+     1.0
+    ]
+   ]
+  },
+  {
+   "t": 32.0333,
+   "clip": "confirmation-intro",
+   "xfade": false,
+   "rates": [
+    [
+     32.0333,
+     1.0
+    ]
+   ]
+  },
+  {
+   "t": 37.2,
+   "clip": "confirmation-loop-2",
+   "xfade": false,
+   "rates": [
+    [
+     37.2,
+     1.0
+    ],
+    [
+     37.2,
+     1.0286979483174221
+    ]
+   ]
+  },
+  {
+   "t": 42.7896,
+   "clip": "confirmation-loop",
+   "xfade": false,
+   "rates": [
+    [
+     42.7896,
+     1.0286979483174221
+    ],
+    [
+     42.7896,
+     1.054363747234758
+    ]
+   ]
+  },
+  {
+   "t": 48.2431,
+   "clip": "confirmation-loop-2",
+   "xfade": false,
+   "rates": [
+    [
+     48.2431,
+     1.054363747234758
+    ],
+    [
+     48.2431,
+     1.0411905708414642
+    ]
+   ]
+  },
+  {
+   "t": 53.7656,
+   "clip": "confirmation-loop",
+   "xfade": false,
+   "rates": [
+    [
+     53.7656,
+     1.0411905708414642
+    ],
+    [
+     53.7656,
+     0.9766429833243753
+    ]
+   ]
+  },
+  {
+   "t": 59.6532,
+   "clip": "confirmation-loop",
+   "xfade": false,
+   "rates": [
+    [
+     59.6532,
+     0.9766429833243753
+    ],
+    [
+     59.6532,
+     1.047242885559731
+    ]
+   ]
+  },
+  {
+   "t": 65.1438,
+   "clip": "confirmation-loop",
+   "xfade": false,
+   "rates": [
+    [
+     65.1438,
+     1.047242885559731
+    ],
+    [
+     65.1438,
+     1.0473735866633154
+    ]
+   ]
+  },
+  {
+   "t": 70.6337,
+   "clip": "confirmation-loop",
+   "xfade": false,
+   "rates": [
+    [
+     70.6337,
+     1.0473735866633154
+    ],
+    [
+     70.6337,
+     1.0198156368104816
+    ]
+   ]
+  },
+  {
+   "t": 76.272,
+   "clip": "confirmation-loop-2",
+   "xfade": false,
+   "rates": [
+    [
+     76.272,
+     1.0198156368104816
+    ],
+    [
+     76.272,
+     1.059037359198519
+    ]
+   ]
+  },
+  {
+   "t": 81.7014,
+   "clip": "confirmation-loop",
+   "xfade": false,
+   "rates": [
+    [
+     81.7014,
+     1.059037359198519
+    ],
+    [
+     81.7014,
+     1.0291342082088044
+    ]
+   ]
+  },
+  {
+   "t": 87.2886,
+   "clip": "confirmation-loop",
+   "xfade": false,
+   "rates": [
+    [
+     87.2886,
+     1.0291342082088044
+    ],
+    [
+     87.2886,
+     0.9993312106591543
+    ]
+   ]
+  },
+  {
+   "t": 93.0425,
+   "clip": "confirmation-loop",
+   "xfade": false,
+   "rates": [
+    [
+     93.0425,
+     0.9993312106591543
+    ],
+    [
+     93.0425,
+     0.9975461893063119
+    ]
+   ]
+  },
+  {
+   "t": 98.8066,
+   "clip": "event-confirmation-wave",
+   "xfade": false,
+   "rates": [
+    [
+     98.8066,
+     0.9975461893063119
+    ],
+    [
+     98.8066,
+     1.0
+    ]
+   ]
+  },
+  {
+   "t": 109.3066,
+   "clip": "confirmation-outro",
+   "xfade": false,
+   "rates": [
+    [
+     109.3066,
+     1.0
+    ]
+   ]
+  },
+  {
+   "t": 114.4733,
+   "clip": "complete-intro",
+   "xfade": false,
+   "rates": [
+    [
+     114.4733,
+     1.0
+    ]
+   ]
+  },
+  {
+   "t": 121.0566,
+   "clip": "complete-loop-2",
+   "xfade": false,
+   "rates": [
+    [
+     121.0566,
+     1.0
+    ],
+    [
+     121.0566,
+     1.0038516403403763
+    ]
+   ]
+  },
+  {
+   "t": 126.7846,
+   "clip": "complete-loop-2",
+   "xfade": false,
+   "rates": [
+    [
+     126.7846,
+     1.0038516403403763
+    ],
+    [
+     126.7846,
+     0.9713150694788023
+    ]
+   ]
+  },
+  {
+   "t": 132.7044,
+   "clip": "complete-loop-2",
+   "xfade": false,
+   "rates": [
+    [
+     132.7044,
+     0.9713150694788023
+    ],
+    [
+     132.7044,
+     0.986952009087697
+    ]
+   ]
+  }
+ ],
+ "ui": [
+  {
+   "t": 3.2,
+   "line": [
+    "you",
+    "登录页点了没反应，帮我看看"
+   ]
+  },
+  {
+   "t": 5.6,
+   "line": [
+    "say",
+    "我先看看登录页相关的代码。"
+   ]
+  },
+  {
+   "t": 6.4,
+   "line": [
+    "tool",
+    "Read",
+    "src/pages/Login.tsx"
+   ]
+  },
+  {
+   "t": 6.7,
+   "line": [
+    "result",
+    "Read 84 lines"
+   ]
+  },
+  {
+   "t": 6.95,
+   "line": [
+    "tool",
+    "Search",
+    "handleSubmit"
+   ]
+  },
+  {
+   "t": 7.25,
+   "line": [
+    "result",
+    "Found 3 files"
+   ]
+  },
+  {
+   "t": 7.5,
+   "line": [
+    "tool",
+    "Read",
+    "src/components/LoginForm.tsx"
+   ]
+  },
+  {
+   "t": 7.8,
+   "line": [
+    "result",
+    "Read 112 lines"
+   ]
+  },
+  {
+   "t": 8.05,
+   "line": [
+    "tool",
+    "Read",
+    "src/api/auth.ts"
+   ]
+  },
+  {
+   "t": 8.35,
+   "line": [
+    "result",
+    "Read 46 lines"
+   ]
+  },
+  {
+   "t": 8.6,
+   "line": [
+    "tool",
+    "Read",
+    "src/components/Button.tsx"
+   ]
+  },
+  {
+   "t": 8.9,
+   "line": [
+    "result",
+    "Read 38 lines"
+   ]
+  },
+  {
+   "t": 9.15,
+   "line": [
+    "tool",
+    "Read",
+    "src/hooks/useAuth.ts"
+   ]
+  },
+  {
+   "t": 9.45,
+   "line": [
+    "result",
+    "Read 61 lines"
+   ]
+  },
+  {
+   "t": 9.7,
+   "line": [
+    "tool",
+    "Search",
+    "onSubmit"
+   ]
+  },
+  {
+   "t": 10.0,
+   "line": [
+    "result",
+    "Found 5 files"
+   ]
+  },
+  {
+   "t": 10.25,
+   "line": [
+    "tool",
+    "Read",
+    "src/pages/Login.test.tsx"
+   ]
+  },
+  {
+   "t": 10.55,
+   "line": [
+    "result",
+    "Read 70 lines"
+   ]
+  },
+  {
+   "t": 10.8,
+   "line": [
+    "tool",
+    "Read",
+    "src/api/client.ts"
+   ]
+  },
+  {
+   "t": 11.1,
+   "line": [
+    "result",
+    "Read 52 lines"
+   ]
+  },
+  {
+   "t": 11.35,
+   "line": [
+    "tool",
+    "Read",
+    "src/router.tsx"
+   ]
+  },
+  {
+   "t": 11.65,
+   "line": [
+    "result",
+    "Read 33 lines"
+   ]
+  },
+  {
+   "t": 11.9,
+   "line": [
+    "tool",
+    "Read",
+    "src/components/Input.tsx"
+   ]
+  },
+  {
+   "t": 12.2,
+   "line": [
+    "result",
+    "Read 41 lines"
+   ]
+  },
+  {
+   "t": 12.45,
+   "line": [
+    "say",
+    "找到原因了：表单没有绑定提交事件，按钮点了只是个普通按钮。我来修一下。"
+   ]
+  },
+  {
+   "t": 13.0,
+   "line": [
+    "tool",
+    "Update",
+    "src/components/LoginForm.tsx"
+   ]
+  },
+  {
+   "t": 13.35,
+   "line": [
+    "result",
+    "Updated with 3 additions and 1 removals"
+   ]
+  },
+  {
+   "t": 13.65,
+   "line": [
+    "tool",
+    "Update",
+    "src/api/auth.ts"
+   ]
+  },
+  {
+   "t": 14.0,
+   "line": [
+    "result",
+    "Updated with 5 additions and 2 removals"
+   ]
+  },
+  {
+   "t": 14.3,
+   "line": [
+    "tool",
+    "Update",
+    "src/components/Button.tsx"
+   ]
+  },
+  {
+   "t": 14.65,
+   "line": [
+    "result",
+    "Updated with 1 additions and 1 removals"
+   ]
+  },
+  {
+   "t": 14.95,
+   "line": [
+    "tool",
+    "Update",
+    "src/hooks/useAuth.ts"
+   ]
+  },
+  {
+   "t": 15.3,
+   "line": [
+    "result",
+    "Updated with 4 additions and 0 removals"
+   ]
+  },
+  {
+   "t": 15.6,
+   "line": [
+    "tool",
+    "Update",
+    "src/pages/Login.tsx"
+   ]
+  },
+  {
+   "t": 15.95,
+   "line": [
+    "result",
+    "Updated with 2 additions and 2 removals"
+   ]
+  },
+  {
+   "t": 16.25,
+   "line": [
+    "tool",
+    "Update",
+    "src/api/auth.ts"
+   ]
+  },
+  {
+   "t": 16.6,
+   "line": [
+    "result",
+    "Updated with 1 additions and 1 removals"
+   ]
+  },
+  {
+   "t": 16.9,
+   "line": [
+    "tool",
+    "Update",
+    "src/components/LoginForm.tsx"
+   ]
+  },
+  {
+   "t": 17.25,
+   "line": [
+    "result",
+    "Updated with 6 additions and 3 removals"
+   ]
+  },
+  {
+   "t": 17.55,
+   "line": [
+    "tool",
+    "Update",
+    "src/pages/Login.test.tsx"
+   ]
+  },
+  {
+   "t": 17.9,
+   "line": [
+    "result",
+    "Updated with 18 additions and 0 removals"
+   ]
+  },
+  {
+   "t": 18.2,
+   "line": [
+    "tool",
+    "Update",
+    "src/hooks/useAuth.ts"
+   ]
+  },
+  {
+   "t": 18.55,
+   "line": [
+    "result",
+    "Updated with 2 additions and 1 removals"
+   ]
+  },
+  {
+   "t": 18.85,
+   "line": [
+    "tool",
+    "Update",
+    "src/components/LoginForm.tsx"
+   ]
+  },
+  {
+   "t": 19.2,
+   "line": [
+    "result",
+    "Updated with 1 additions and 1 removals"
+   ]
+  },
+  {
+   "t": 19.5,
+   "line": [
+    "tool",
+    "Update",
+    "src/api/auth.ts"
+   ]
+  },
+  {
+   "t": 19.85,
+   "line": [
+    "result",
+    "Updated with 3 additions and 0 removals"
+   ]
+  },
+  {
+   "t": 20.15,
+   "line": [
+    "tool",
+    "Update",
+    "src/pages/Login.test.tsx"
+   ]
+  },
+  {
+   "t": 20.5,
+   "line": [
+    "result",
+    "Updated with 4 additions and 2 removals"
+   ]
+  },
+  {
+   "t": 20.8,
+   "line": [
+    "say",
+    "改好了，跑一下测试确认。"
+   ]
+  },
+  {
+   "t": 21.7,
+   "line": [
+    "ask",
+    "npm test -- login",
+    "Run login tests"
+   ]
+  },
+  {
+   "t": 103.0,
+   "line": [
+    "approve"
+   ]
+  },
+  {
+   "t": 103.2,
+   "line": [
+    "tool",
+    "Bash",
+    "npm test -- login"
+   ]
+  },
+  {
+   "t": 105.6,
+   "line": [
+    "result",
+    "PASS  4 tests passed"
+   ]
+  },
+  {
+   "t": 107.0,
+   "line": [
+    "say",
+    "修好了：表单现在会正常提交，测试全部通过。"
+   ]
+  }
+ ]
+}

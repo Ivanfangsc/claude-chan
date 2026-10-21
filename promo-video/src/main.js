@@ -3,6 +3,7 @@
 import { FPS, H, W } from './core.js'
 import { init, loadPending, pending } from './assets.js'
 import { DURATION, TIMELINE, cover, drawAt } from './scenes.js'
+import { bubbleReady } from './story.js'
 
 const canvas = document.getElementById('c')
 canvas.width = W
@@ -44,6 +45,7 @@ window.DURATION = DURATION
 window.FPS = FPS
 
 await init()
+await bubbleReady
 await fontsReady()
 window.ready = true
 

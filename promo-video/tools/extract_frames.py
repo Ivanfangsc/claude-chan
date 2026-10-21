@@ -31,6 +31,18 @@ CLIPS = [
 ]
 
 
+# 剧情（tools/simulate.py 算出的 src/story.json）里她实际播到的片段
+STORY = ROOT / "promo-video" / "src" / "story.json"
+if STORY.exists():
+    _have = {(sk, c) for sk, c, _h in CLIPS}
+    for _c in json.loads(STORY.read_text(encoding="utf-8"))["clips"]:
+        if ("adult", _c["clip"]) not in _have:
+            CLIPS.append(("adult", _c["clip"], 960))
+            _have.add(("adult", _c["clip"]))
+    CLIPS = [(sk, c, 960 if sk == "adult" and any(x["clip"] == c for x in json.loads(STORY.read_text(encoding="utf-8"))["clips"]) else h)
+             for sk, c, h in CLIPS]
+
+
 def clip_file(skin: str, cid: str) -> Path:
     m = json.loads((SKINS[skin] / "manifest.json").read_text(encoding="utf-8"))
     for c in m["clips"]:
