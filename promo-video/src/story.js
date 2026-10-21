@@ -3,7 +3,7 @@
 // 桌面和终端是示意，用代码画；终端内容按 story.json（tools/simulate.py 生成的事件时间线）走，
 // 她的帧原样播放；气泡是插件的气泡组件渲染的图（tools/bubble_png.py）。
 
-import { C, FONT, H, W, font, roundRect, text, typed } from './core.js'
+import { C, FONT, H, W, ease, font, prog, roundRect, text, typed } from './core.js'
 import { frameAt, info } from './assets.js'
 import STORY from './story.json' with { type: 'json' }
 import BUBBLE from '../frames/bubble.json' with { type: 'json' }
@@ -16,22 +16,22 @@ const PROMPT = '登录页点了没反应，帮我看看'
 // ---------- 分镜 ----------
 // 画面始终是同一个桌面、同一个构图，不缩放不移动；切的是工作状态：每一镜换终端内容和她的动作。
 // 片中时间都落在配乐《おしんこ》的小节 / 半小节上（一小节约 2.41 秒），22.83 主旋律进来时切到标题。
-// at：片中开始时间；ts：终端停在剧情的哪一刻；her：[片段, 从片段第几秒开始]；bubble：有没有气泡；click：鼠标按在“1. Yes”上
+// at：片中开始时间；tag：她脚边的状态标签；ts：终端停在剧情的哪一刻；her：[片段, 从片段第几秒开始]；bubble：有没有气泡；click：鼠标按在“1. Yes”上
 const OPEN_END = 5.74
 const CUTS = [
-  { at: 5.74, ts: 6.3, her: ['thinking-loop', 1.0] }, // 思考
-  { at: 7.04, ts: 8.0, her: ['thinking-to-reading', 1.7] }, // 开始读文件
-  { at: 8.34, ts: 9.6, her: ['reading-loop', 1.0] }, // 读代码
-  { at: 9.6, ts: 11.7, her: ['reading-loop', 3.4] },
-  { at: 10.87, ts: 13.2, her: ['reading-to-writing', 2.0] }, // 找到原因，开始改
-  { at: 12.07, ts: 14.9, her: ['writing-loop', 0.8] }, // 写代码
-  { at: 13.26, ts: 17.4, her: ['event-writing-ink', 4.0] },
-  { at: 14.46, ts: 21.9, her: ['confirmation-intro', 2.4], bubble: true }, // 要确认：冒气泡
-  { at: 15.65, ts: 60, her: ['event-confirmation-wave', 3.0], bubble: true }, // 还在等：招手
-  { at: 16.85, ts: 102.95, her: ['confirmation-loop', 2.0], bubble: true, click: true }, // 点“允许”
-  { at: 18.04, ts: 105.8, her: ['confirmation-outro', 2.0] }, // 测试通过
-  { at: 19.24, ts: 107.3, her: ['complete-intro', 2.2] }, // 修好了
-  { at: 20.43, ts: 108.5, her: ['complete-intro', 3.6] }
+  { at: 5.74, ts: 6.3, her: ['thinking-loop', 1.0], tag: '思考' }, // 思考
+  { at: 7.04, ts: 8.0, her: ['thinking-to-reading', 1.7], tag: '思考 → 读代码' }, // 开始读文件
+  { at: 8.34, ts: 9.6, her: ['reading-loop', 1.0], tag: '读代码' }, // 读代码
+  { at: 9.6, ts: 11.7, her: ['reading-loop', 3.4], tag: '读代码' },
+  { at: 10.87, ts: 13.2, her: ['reading-to-writing', 2.0], tag: '读代码 → 写代码' }, // 找到原因，开始改
+  { at: 12.07, ts: 14.9, her: ['writing-loop', 0.8], tag: '写代码' }, // 写代码
+  { at: 13.26, ts: 17.4, her: ['event-writing-ink', 4.0], tag: '写代码' },
+  { at: 14.46, ts: 21.9, her: ['confirmation-intro', 2.4], bubble: true, tag: '等你确认' }, // 要确认：冒气泡
+  { at: 15.65, ts: 60, her: ['event-confirmation-wave', 3.0], bubble: true, tag: '等你确认' }, // 还在等：招手
+  { at: 16.85, ts: 102.95, her: ['confirmation-loop', 2.0], bubble: true, click: true, tag: '等你确认' }, // 点“允许”
+  { at: 18.04, ts: 105.8, her: ['confirmation-outro', 2.0], tag: '等你确认 → 完成' }, // 测试通过
+  { at: 19.24, ts: 107.3, her: ['complete-intro', 2.2], tag: '完成' }, // 修好了
+  { at: 20.43, ts: 108.5, her: ['complete-intro', 3.6], tag: '完成' }
 ]
 export const STORY_DUR = 22.83
 
@@ -115,16 +115,16 @@ function transcript(ctx, ts) {
     const later = ui.slice(k + 1).some(v => v.line[0] === 'result')
     if (kind === 'you') {
       rows.push({ gap: true })
-      for (const ln of wrapLine(ctx, `> ${a}`, width)) rows.push({ s: ln, col: '#cfcfcf', bg: '#3a3a3a' })
+      for (const ln of wrapLine(ctx, `> ${a}`, width)) rows.push({ s: ln, col: '#cfcfcf', bg: '#3a3a3a', t: u.t })
     } else if (kind === 'say') {
       rows.push({ gap: true })
-      wrapLine(ctx, a, width - 28).forEach((ln, i) => rows.push({ s: ln, col: FG, dot: i === 0 ? FG : null, indent: 28 }))
+      wrapLine(ctx, a, width - 28).forEach((ln, i) => rows.push({ s: ln, col: FG, dot: i === 0 ? FG : null, indent: 28, t: u.t }))
     } else if (kind === 'tool') {
       rows.push({ gap: true })
       const done = ui.slice(k + 1).some(v => v.line[0] === 'result') || later
-      rows.push({ s: `${a}(${b})`, col: FG, bold: true, dot: done ? GREEN : (Math.floor(ts * 3) % 2 ? FG : '#555'), indent: 28 })
+      rows.push({ s: `${a}(${b})`, col: FG, bold: true, dot: done ? GREEN : (Math.floor(ts * 3) % 2 ? FG : '#555'), indent: 28, t: u.t })
     } else if (kind === 'result') {
-      rows.push({ s: `⎿  ${a}`, col: DIM, indent: 28 })
+      rows.push({ s: `⎿  ${a}`, col: DIM, indent: 28, t: u.t })
     } else if (kind === 'approve') {
       // 确认框收起，什么都不留
     }
@@ -152,7 +152,8 @@ function permissionBox(ctx, x, y, w, ts) {
   return h
 }
 
-function terminal(ctx, ts, front) {
+// glow：切到这一镜后过了多久；这一镜里新出现的行（剧情时间在 glowFrom 之后）用橙色底闪一下
+function terminal(ctx, ts, front, glow = null, glowFrom = 0) {
   const { x, y, w, h } = TERM
   ctx.save()
   ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12
@@ -191,6 +192,10 @@ function terminal(ctx, ts, front) {
     yy += LH
     const rx = x + 30 + (r.indent || 0)
     if (r.bg) { ctx.fillStyle = r.bg; ctx.fillRect(x + 22, yy - LH + 8, w - 60, LH) }
+    if (glow !== null && r.t > glowFrom) {
+      ctx.fillStyle = `rgba(217,119,87,${0.32 * (1 - ease.out(glow / 0.9))})`
+      ctx.fillRect(x + 22, yy - LH + 8, w - 60, LH)
+    }
     if (r.dot) { ctx.fillStyle = r.dot; ctx.beginPath(); ctx.arc(x + 40, yy - 7, 6, 0, Math.PI * 2); ctx.fill() }
     text(ctx, r.s, rx, yy, { size: TS, family: FONT.mono, weight: r.bold ? 700 : 400, color: r.col })
   }
@@ -235,13 +240,39 @@ function pointer(ctx, x, y, down) {
 const YES = { x: TERM.x + 46 + 70, y: TERM.y + TERM.h - BOTTOM_PAD - ASK_H + 34 + 6 * LH - 7 }
 
 // ---------- 画面 ----------
-function desktop(ctx, ts, her, { bubble = false, click = false, typing = false } = {}) {
+function desktop(ctx, ts, her, { bubble = false, click = false, typing = false, glow = null, glowFrom = 0 } = {}) {
   wallpaper(ctx)
-  terminal(ctx, ts, typing)
+  terminal(ctx, ts, typing, glow, glowFrom)
   for (const h of her) drawHer(ctx, ...h)
   if (bubble) drawBubble(ctx)
   taskbar(ctx)
   if (click) pointer(ctx, YES.x, YES.y, true)
+}
+
+// 她脚边的状态标签：每次切镜头弹一下，状态变了换字
+function stateTag(ctx, lt) {
+  let label, since
+  if (lt < OPEN_END) {
+    const go = SUBMIT_AT - 0.55
+    if (lt < go) return
+    label = '思考'; since = lt - go
+  } else {
+    let i = CUTS.length - 1
+    while (i > 0 && CUTS[i].at > lt) i--
+    label = CUTS[i].tag; since = lt - CUTS[i].at
+  }
+  const pop = ease.back(prog(since, 0, 0.28))
+  font(ctx, 34, FONT.cjk, 900)
+  const w = ctx.measureText(label).width + 56
+  const cx = HER.x + HER.w / 2, cy = 984
+  ctx.save()
+  ctx.translate(cx, cy)
+  ctx.scale(0.6 + 0.4 * pop, 0.6 + 0.4 * pop)
+  ctx.globalAlpha = Math.min(1, pop * 1.5)
+  ctx.fillStyle = C.orange
+  roundRect(ctx, -w / 2, -30, w, 60, 30); ctx.fill()
+  text(ctx, label, 0, 2, { size: 34, weight: 900, color: C.ink, align: 'center', baseline: 'middle' })
+  ctx.restore()
 }
 
 export function storyScene(ctx, lt) {
@@ -257,8 +288,13 @@ export function storyScene(ctx, lt) {
     let i = CUTS.length - 1
     while (i > 0 && CUTS[i].at > lt) i--
     const c = CUTS[i]
-    desktop(ctx, c.ts, [[`adult/${c.her[0]}`, c.her[1] + lt - c.at]], c)
+    const prev = i > 0 ? CUTS[i - 1].ts : SUBMIT_AT + OPEN_END - 2.65
+    desktop(ctx, c.ts, [[`adult/${c.her[0]}`, c.her[1] + lt - c.at]], { ...c, glow: lt - c.at, glowFrom: prev })
+    // 切点：很短的白闪
+    const k = (lt - c.at) / 0.14
+    if (k < 1) { ctx.fillStyle = `rgba(255,255,255,${0.22 * (1 - k)})`; ctx.fillRect(0, 0, W, H) }
   }
+  stateTag(ctx, lt)
   // 说明：她是实机，其余是示意
   font(ctx, 20, FONT.cjk, 700)
   const note = '她的动作和气泡为实机画面 · 桌面与终端为示意'
