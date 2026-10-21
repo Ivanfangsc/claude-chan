@@ -252,3 +252,24 @@ export function drawAt(ctx, t) {
   if (next && next.enter === 'wipe' && t > next.start - 0.4) wipe(ctx, t - next.start, [C.orange, C.ink, C.cream], 0.4)
   if (s.enter === 'wipe' && t - s.start < 0.5) wipe(ctx, t - s.start, [C.orange, C.ink, C.cream], 0.4)
 }
+
+// ---------- 封面（不在时间线里，render.mjs --cover 单独导出）----------
+// 缩成小图也要看得清：字大、只有三行；她用实机帧，放在右边，避开右下角的时长角标
+export function cover(ctx) {
+  ctx.fillStyle = C.cream
+  ctx.fillRect(0, 0, W, H)
+  halftone(ctx, 0, 0, 1000, 640, C.orange2, { dir: 'tl', step: 26, maxR: 10 })
+  slab(ctx, 1, C.orange, { y0: 862, y1: 892 })
+  slab(ctx, 1, C.ink, { y0: 892, y1: H })
+  footage(ctx, A('idle-loop'), 0, 1190, 40, 990, { tag: false })
+  popText(ctx, 'Claude-Chan', 96, 290, 10, 0, { size: 196, family: FONT.title, weight: 700, stretch: 'condensed',
+    color: C.ink, shadow: { color: C.orange, dx: 10, dy: 10 } })
+  text(ctx, 'Claude小姐现在在干嘛？', 104, 470, { size: 84, weight: 900, color: C.ink })
+  ctx.font = `900 84px ${FONT.cjk}`
+  const ans = '看她就知道了'
+  const w = ctx.measureText(ans).width + 72
+  ctx.fillStyle = C.orange
+  roundRect(ctx, 96, 530, w, 130, 20); ctx.fill()
+  text(ctx, ans, 132, 595, { size: 84, weight: 900, color: C.ink, baseline: 'middle' })
+  text(ctx, 'Claude Code 桌面伙伴 · 免费开源 · Windows', 104, 1000, { size: 44, weight: 900, color: C.cream })
+}

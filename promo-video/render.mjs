@@ -2,6 +2,7 @@
 //
 //   node render.mjs                              # 整片 → out/claude-chan-promo.mp4（无声）
 //   node render.mjs --stills 2.6,14.5,33          # 指定时间点的静帧 → out/stills/
+//   node render.mjs --cover                       # 封面 → out/cover.png
 //   node render.mjs --sheet                       # 每个场景抽几帧拼成一张总览图 → out/sheet.png
 //   node render.mjs --music 文件.mp3              # 整片并合进配乐（结尾 2 秒淡出）
 //   node render.mjs --from 20 --to 50            # 只导出一段（调试用）
@@ -48,7 +49,11 @@ async function shot(t) {
 
 mkdirSync(join(ROOT, 'out'), { recursive: true })
 
-if (args.includes('--stills')) {
+if (args.includes('--cover')) {
+  await page.evaluate(() => window.renderCover())
+  writeFileSync(join(ROOT, 'out/cover.png'), await canvas.screenshot({ type: 'png' }))
+  console.log('封面在 out/cover.png')
+} else if (args.includes('--stills')) {
   mkdirSync(join(ROOT, 'out/stills'), { recursive: true })
   for (const t of opt('--stills').split(',').map(Number)) {
     writeFileSync(join(ROOT, 'out/stills', `${t.toFixed(1)}.png`), await shot(t))

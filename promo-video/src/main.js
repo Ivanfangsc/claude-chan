@@ -2,7 +2,7 @@
 
 import { FPS, H, W } from './core.js'
 import { init, loadPending, pending } from './assets.js'
-import { DURATION, TIMELINE, drawAt } from './scenes.js'
+import { DURATION, TIMELINE, cover, drawAt } from './scenes.js'
 
 const canvas = document.getElementById('c')
 canvas.width = W
@@ -24,6 +24,17 @@ window.renderFrame = async t => {
     pending.clear()
     ctx.clearRect(0, 0, W, H)
     drawAt(ctx, t)
+    if (pending.size === 0) return true
+    await loadPending()
+  }
+  return false
+}
+// 封面：同样等帧加载好
+window.renderCover = async () => {
+  for (let tries = 0; tries < 6; tries++) {
+    pending.clear()
+    ctx.clearRect(0, 0, W, H)
+    cover(ctx)
     if (pending.size === 0) return true
     await loadPending()
   }
