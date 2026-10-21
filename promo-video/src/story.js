@@ -2,7 +2,7 @@
 // 她的每一帧按 story.json 播放——那是 tools/simulate.py 把同一串 hook 事件喂给插件真实的会话汇总和动画引擎算出来的，
 // 所以她什么时候转身、播哪一段、招不招手，都和桌宠里一样。气泡是插件的气泡组件渲染的图（tools/bubble_png.py）。
 //
-// 片子分两个镜头，中间跳过她等你确认的一分多钟（任务栏时钟往前走，画面写“过了一会儿”）。
+// 片子分两个镜头，中间跳过她等你确认的一分多钟（直接切，任务栏时钟往前走，画面上写“过了一会儿”）。
 // 每个镜头内部是连续的真实时间。
 
 import { C, FONT, H, W, clamp, ease, font, lerp, prog, roundRect, text, typed } from './core.js'
@@ -11,13 +11,12 @@ import STORY from './story.json' with { type: 'json' }
 import BUBBLE from '../frames/bubble.json' with { type: 'json' }
 
 // ---------- 剪辑：片中时间 → 剧情时间 ----------
-const SKIP = 1.4 // 两个镜头之间“过了一会儿”的长度
 export const SHOTS = [
-  { s0: 0, s1: 27.5 },
-  { s0: 101.0, s1: 122.6 }
+  { s0: 0, s1: 25.0 }, // 打字 → 思考 → 读代码 → 写代码 → 要确认，冒气泡
+  { s0: 101.2, s1: 121.3 } // 她在招手 → 用户点气泡、允许 → 测试通过 → 完成
 ]
 SHOTS[0].f0 = 0
-SHOTS[1].f0 = SHOTS[0].s1 - SHOTS[0].s0 + SKIP
+SHOTS[1].f0 = SHOTS[0].s1 - SHOTS[0].s0
 export const STORY_DUR = SHOTS[1].f0 + SHOTS[1].s1 - SHOTS[1].s0
 
 // 用户的动作（剧情时间）：和 simulate.py 的事件对得上
@@ -349,64 +348,35 @@ function desktop(ctx, ts) {
   mouse(ctx, ts)
 }
 
-// ---------- 镜头 ----------
-// [剧情时间, 中心 x, 中心 y, 缩放]，相邻关键帧之间缓动
-const HERC = [HER.x + HER.w / 2, HER.y + HER.h * 0.45]
-const CAM = [
-  [0, W / 2, H / 2, 1], [SUBMIT_AT + 0.2, W / 2, H / 2, 1], [SUBMIT_AT + 1.6, 1180, 560, 1.18],
-  [BROWSER_AT, 1100, 560, 1.12], [BROWSER_AT + 1.2, W / 2, H / 2, 1], [20.2, W / 2, H / 2, 1],
-  [21.5, HERC[0] - 160, HERC[1] - 40, 1.75], [27.5, HERC[0] - 120, HERC[1] - 20, 1.9],
-  [101.0, HERC[0] - 140, HERC[1] - 40, 1.8], [BUBBLE_CLICK_AT, HERC[0] - 160, HERC[1] - 40, 1.7],
-  [BUBBLE_CLICK_AT + 0.9, 700, 600, 1.15], [APPROVE_AT + 4.2, 700, 620, 1.15],
-  [109.0, W / 2 + 120, H / 2, 1.1], [112.0, HERC[0] - 140, HERC[1] - 10, 1.6], [122.6, HERC[0] - 120, HERC[1], 1.7]
-]
-function camAt(ts) {
-  let i = 0
-  while (i < CAM.length - 1 && CAM[i + 1][0] <= ts) i++
-  const a = CAM[i], b = CAM[i + 1]
-  if (!b) return a.slice(1)
-  // 两个镜头之间不插值
-  if (a[0] < SHOTS[0].s1 + 0.01 && b[0] >= SHOTS[1].s0) return a.slice(1)
-  const k = ease.inOut((ts - a[0]) / (b[0] - a[0]))
-  return [lerp(a[1], b[1], k), lerp(a[2], b[2], k), lerp(a[3], b[3], k)]
-}
-
+// ---------- 剪辑 ----------
+// 固定看整个桌面，不推拉。两个镜头之间直接切，第二个镜头开头叠一行“过了一会儿”（任务栏时钟也往前走了）。
 function storyTime(lt) {
   for (const s of SHOTS) if (lt >= s.f0 && lt < s.f0 + s.s1 - s.s0) return s.s0 + lt - s.f0
-  return null
+  return SHOTS[1].s1
 }
 
 export function storyScene(ctx, lt) {
   const ts = storyTime(lt)
-  if (ts === null) {
-    // 镜头之间：过了一会儿
-    const k = (lt - (SHOTS[0].f0 + SHOTS[0].s1 - SHOTS[0].s0)) / SKIP
-    ctx.fillStyle = '#121212'
-    ctx.fillRect(0, 0, W, H)
-    text(ctx, '过了一会儿……', W / 2, H / 2 + 20, { size: 64, weight: 900, color: C.cream, align: 'center',
-      alpha: ease.out(prog(k, 0.1, 0.3)) * (1 - ease.in(prog(k, 0.75, 0.25))) })
-    return
-  }
-  const [cx, cy, z] = camAt(ts)
-  ctx.save()
-  ctx.translate(W / 2, H / 2)
-  ctx.scale(z, z)
-  ctx.translate(-clamp(cx, W / 2 / z, W - W / 2 / z), -clamp(cy, H / 2 / z, H - H / 2 / z))
   desktop(ctx, ts)
-  ctx.restore()
   // 说明：她是实机，其余是示意
-  ctx.save()
   font(ctx, 20, FONT.cjk, 700)
   const note = '她的动作和气泡为实机画面 · 桌面与终端为示意'
   const nw = ctx.measureText(note).width + 36
   ctx.fillStyle = 'rgba(20,20,20,0.72)'
-  roundRect(ctx, 28, H - 66, nw, 40, 20); ctx.fill()
-  text(ctx, note, 46, H - 39, { size: 20, weight: 700, color: '#eee' })
-  ctx.restore()
-  // 镜头开头淡入
-  const fromShot = lt < SHOTS[1].f0 ? lt : lt - SHOTS[1].f0
-  if (fromShot < 0.4) { ctx.fillStyle = `rgba(18,18,18,${1 - fromShot / 0.4})`; ctx.fillRect(0, 0, W, H) }
-  // 第一个镜头结尾淡出到“过了一会儿”
-  const toEnd = SHOTS[0].s1 - ts
-  if (lt < SHOTS[1].f0 && toEnd < 0.5) { ctx.fillStyle = `rgba(18,18,18,${1 - toEnd / 0.5})`; ctx.fillRect(0, 0, W, H) }
+  roundRect(ctx, 28, H - TASKBAR - 56, nw, 40, 20); ctx.fill()
+  text(ctx, note, 46, H - TASKBAR - 29, { size: 20, weight: 700, color: '#eee' })
+  // 第二个镜头开头：过了一会儿
+  const since = lt - SHOTS[1].f0
+  if (since >= 0 && since < 1.8) {
+    const a = since < 1.4 ? 1 : 1 - (since - 1.4) / 0.4
+    font(ctx, 40, FONT.cjk, 900)
+    const label = '过了一会儿……'
+    const lw = ctx.measureText(label).width + 64
+    ctx.save()
+    ctx.globalAlpha = a
+    ctx.fillStyle = 'rgba(20,20,20,0.82)'
+    roundRect(ctx, W / 2 - lw / 2, 40, lw, 72, 36); ctx.fill()
+    text(ctx, label, W / 2, 90, { size: 40, weight: 900, color: C.cream, align: 'center' })
+    ctx.restore()
+  }
 }
