@@ -46,7 +46,15 @@ function variety(ctx, lt) {
   })
 }
 
-// ---------- #03 两种形象 ----------
+// ---------- 两种形象：同一个状态并排，按拍子快切 ----------
+// 每半小节换一个状态，两边同时换；片段都从动作最明显的地方开始放
+const LOOKS = [
+  ['思考', 'event-thinking-ponder', 4.9],
+  ['读代码', 'event-reading-page', 4.3],
+  ['写代码', 'event-writing-ink', 3.0],
+  ['等你确认', 'event-confirmation-wave', 5.0]
+]
+const LOOK_CUT = 4.81 / LOOKS.length
 function looks(ctx, lt) {
   ctx.fillStyle = C.cream
   ctx.fillRect(0, 0, W, H)
@@ -54,22 +62,36 @@ function looks(ctx, lt) {
   ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(1060, 0); ctx.lineTo(860, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill()
   halftone(ctx, 0, 0, 900, 560, C.deep, { dir: 'tl', step: 24, maxR: 9 })
   halftone(ctx, W - 700, H - 460, 700, 460, C.orange2, { dir: 'br', step: 24, maxR: 9 })
+  const i = Math.min(LOOKS.length - 1, Math.floor(lt / LOOK_CUT))
+  const [state, clip, from] = LOOKS[i]
+  const since = lt - i * LOOK_CUT
   const a = ease.expo(prog(lt, 0.05, 0.5)), b = ease.expo(prog(lt, 0.2, 0.5))
-  const h = 820, w = 540 * h / 960, y = 70
-  footage(ctx, A('idle-loop'), lt, lerp(-500, 160, a), y, h)
-  footage(ctx, Q('idle-loop'), lt, lerp(W + 40, 1240, b), y, h)
-  // 标签：一样的深色胶囊，居中放在各自卡片正下方
-  ;[['原版', 160, 0.4], ['Q 版', 1240, 0.55]].forEach(([label, x, t0]) => {
-    const k = ease.back(prog(lt, t0, 0.35))
-    if (k <= 0) return
-    font(ctx, 52, FONT.cjk, 900)
-    const lw = ctx.measureText(label).width + 64
+  const h = 820, w = 540 * h / 960, y = 90
+  footage(ctx, A(clip), from + since, lerp(-500, 160, a), y, h, { loop: false })
+  footage(ctx, Q(clip), from + since, lerp(W + 40, 1240, b), y, h, { loop: false })
+  // 顶上居中：现在是哪个状态，换的时候弹一下
+  const k = ease.back(prog(since, 0, 0.28))
+  font(ctx, 44, FONT.cjk, 900)
+  const sw = ctx.measureText(state).width + 64
+  ctx.save()
+  ctx.translate(W / 2 - 50, 64)
+  ctx.scale(0.6 + 0.4 * k, 0.6 + 0.4 * k)
+  ctx.fillStyle = C.ink
+  roundRect(ctx, -sw / 2, -36, sw, 72, 36); ctx.fill()
+  text(ctx, state, 0, 2, { size: 44, weight: 900, color: C.cream, align: 'center', baseline: 'middle' })
+  ctx.restore()
+  // 卡片下面：原版 / Q 版
+  ;[['原版', 160, 0.3], ['Q 版', 1240, 0.45]].forEach(([label, x, t0]) => {
+    const p = ease.back(prog(lt, t0, 0.35))
+    if (p <= 0) return
+    font(ctx, 46, FONT.cjk, 900)
+    const lw = ctx.measureText(label).width + 56
     ctx.save()
-    ctx.translate(x + w / 2, y + h + 70)
-    ctx.scale(k, k)
+    ctx.translate(x + w / 2, y + h + 50)
+    ctx.scale(p, p)
     ctx.fillStyle = C.ink
-    roundRect(ctx, -lw / 2, -38, lw, 76, 38); ctx.fill()
-    text(ctx, label, 0, 2, { size: 52, weight: 900, color: C.cream, align: 'center', baseline: 'middle' })
+    roundRect(ctx, -lw / 2, -34, lw, 68, 34); ctx.fill()
+    text(ctx, label, 0, 2, { size: 46, weight: 900, color: C.cream, align: 'center', baseline: 'middle' })
     ctx.restore()
   })
 }
@@ -124,12 +146,12 @@ function outro(ctx, lt) {
 
 // ---------- 时间线 ----------
 // 每段的长度（秒），按配乐《おしんこ》对过：约 99 BPM，一小节 2.41 秒，四小节一个乐句。
-// 剧情快切的每一镜落在小节 / 半小节上，标题在主旋律进来时（22.83）出现，之后每段两小节左右。
+// 剧情快切的每一镜落在小节 / 半小节上，标题在主旋律进来时（22.83）出现，之后每段两小节左右；两种形象也是每半小节切一个状态。
 const CUTS = [
   ['剧情', STORY_DUR, storyScene],
   ['标题', 4.82, title],
   ['小动作', 4.81, variety],
-  ['形象', 3.58, looks],
+  ['形象', 4.81, looks],
   ['其余功能', 6.01, quick],
   ['结尾', 4.81, outro]
 ]

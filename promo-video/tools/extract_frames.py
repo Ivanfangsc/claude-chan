@@ -28,6 +28,9 @@ CLIPS = [
     ("adult", "event-confirmation-wave", 960), ("adult", "event-idle-gaze", 960), ("adult", "event-thinking-ponder", 960),
     ("chibi", "idle-loop", 960), ("chibi", "error-intro", 960), ("chibi", "complete-loop", 960),
     ("chibi", "event-idle-stretch", 480), ("chibi", "event-waiting-watch", 480),
+    # 两种形象对比：同一个状态里的小动作
+    ("adult", "event-reading-page", 960), ("chibi", "event-thinking-ponder", 960), ("chibi", "event-reading-page", 960),
+    ("chibi", "event-writing-ink", 960), ("chibi", "event-confirmation-wave", 960),
 ]
 
 
