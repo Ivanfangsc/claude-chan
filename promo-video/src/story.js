@@ -296,11 +296,4 @@ export function storyScene(ctx, lt) {
     desktop(ctx, c.ts, [[`adult/${c.her[0]}`, c.her[1] + lt - c.at]], { ...c, glow: lt - c.at, glowFrom: prev })
   }
   stateTag(ctx, lt)
-  // 说明：她是实机，其余是示意
-  font(ctx, 20, FONT.cjk, 700)
-  const note = '她的动作和气泡为实机画面 · 桌面与终端为示意'
-  const nw = ctx.measureText(note).width + 36
-  ctx.fillStyle = 'rgba(20,20,20,0.72)'
-  roundRect(ctx, W - nw - 28, 24, nw, 40, 20); ctx.fill()
-  text(ctx, note, W - nw - 10, 51, { size: 20, weight: 700, color: '#eee' })
 }

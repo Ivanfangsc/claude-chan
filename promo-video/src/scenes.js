@@ -105,9 +105,6 @@ function outro(ctx, lt) {
     text(ctx, label, W / 2, 678, { size: 34, weight: 900, color: C.ink, align: 'center', baseline: 'middle' })
     ctx.restore()
   }
-  const cr = prog(lt, 1.6, 0.6)
-  text(ctx, '人设：ZipZipPipe　·　特别感谢：黑鹤001　·　角色动画由 AI 生成', W / 2, 960, { size: 24, weight: 500, color: C.mute, align: 'center', alpha: cr })
-  text(ctx, '非 Anthropic 官方作品。Claude 是 Anthropic, PBC 的商标。', W / 2, 1004, { size: 24, weight: 500, color: C.mute, align: 'center', alpha: cr })
   const out = prog(lt, 3.8, 1.0)
   if (out > 0) { ctx.fillStyle = `rgba(0,0,0,${out})`; ctx.fillRect(0, 0, W, H) }
 }

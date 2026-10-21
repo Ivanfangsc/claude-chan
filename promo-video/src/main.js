@@ -9,6 +9,8 @@ const canvas = document.getElementById('c')
 canvas.width = W
 canvas.height = H
 const ctx = canvas.getContext('2d')
+// 她的帧和气泡图画上去时都要缩小：默认的低质量缩放边缘会有细小的锯齿
+ctx.imageSmoothingQuality = 'high'
 
 async function fontsReady() {
   await Promise.all([
