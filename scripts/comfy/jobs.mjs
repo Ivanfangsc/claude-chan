@@ -177,7 +177,7 @@ const NODE_LOOP = {
 const T_GUIDE = 22
 // 动作幅度大的过渡加长，否则中间那一下会显得急（complete 抱书）
 // Q 版 drowsy 进场 124 帧时两次都在中途硬切（整个人突然挪一截、眼睛一下闭上），加长给模型留出时间
-const T_FRAMES = { 'complete-hub-to-state': 158, ...(SKIN ? {} : { 'error-hub-to-state': 158 }), ...(SKIN === 'chibi' ? { 'drowsy-hub-to-state': 158 } : {}) }
+const T_FRAMES = { 'complete-hub-to-state': 158, ...(SKIN === 'chibi' ? {} : { 'error-hub-to-state': 158 }), ...(SKIN === 'chibi' ? { 'drowsy-hub-to-state': 158 } : {}) }
 const T_SLOW = { 'complete-hub-to-state': '整个动作放慢，轻柔地，', ...(SKIN === 'chibi' ? { 'drowsy-hub-to-state': '眼睛一点一点慢慢地合上，' } : {}) }
 for (const [file, t] of Object.entries(TRANSITIONS)) {
   const from = NODE_LOOP[t.first]
@@ -573,13 +573,13 @@ EVENTS['waiting-watch'] = {
   state: 'idle',
   k0: 'hub-A-approved',
   // 参考图是原版的怀表图：Q 版用它会被拉向原版的构图（连续三次切镜头），Q 版只用文字描述
-  refs: SKIN ? undefined : ['pocket-watch-ref'],
+  refs: SKIN === 'chibi' ? undefined : ['pocket-watch-ref'],
   prompt:
     ONE_SHOT +
-    `0到1秒，她安静地坐着自然呼吸；1到2秒，她从腰间取出一只带表盖的金色怀表${SKIN ? '' : '（样子参照<Picture 1>里的怀表）'}，拿在胸前；` +
+    `0到1秒，她安静地坐着自然呼吸；1到2秒，她从腰间取出一只带表盖的金色怀表${SKIN === 'chibi' ? '' : '（样子参照<Picture 1>里的怀表）'}，拿在胸前；` +
     '2到4秒，她用拇指打开表盖，低头看了看表盘上的时间，神情平静；4到5秒，她合上表盖，把怀表放回腰间；' +
     '5到6秒，双手回到膝上合着的书上，回到最初的坐姿。膝上的书和身下的书堆一直不动，嘴巴始终闭合' +
-    (SKIN ? '。背景全程是均匀的纯青色，没有暗角、没有渐变、没有光影变化' : '')
+    (SKIN === 'chibi' ? '。背景全程是均匀的纯青色，没有暗角、没有渐变、没有光影变化' : '')
 }
 for (const [name, at] of Object.entries(INSERTS)) {
   const e = EVENTS[name]

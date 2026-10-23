@@ -72,7 +72,7 @@ class QtScheduler:
 
 
 # 形象（皮肤）：名字 → (显示名, resources 下的素材目录)。素材目录里有 manifest.json 的才能选
-SKINS = {"adult": ("原版", "assets"), "chibi": ("Q 版", "assets-chibi")}
+SKINS = {"adult": ("原版", "assets"), "chibi": ("Q 版", "assets-chibi"), "maid": ("女仆", "assets-maid")}
 
 
 def resource_root() -> Path:
