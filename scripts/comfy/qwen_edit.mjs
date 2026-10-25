@@ -186,6 +186,17 @@ for (const [key, pose] of Object.entries(MAID_POSES)) {
   }
 }
 
+// 第二版：第一版写字、读书时都抬眼盯着观众。把视线写死：低头、看书页，不看观众
+const LOOK_DOWN = '她的头微微低下，眼睛向下看，视线完全落在书页上，绝对不看向观众、不看镜头。'
+EDITS['maid-writing2'] = {
+  refs: ['maid-hub-A-approved'],
+  prompt: `把<image1>里的女仆装角色改成这个姿势：膝上的书摊开平放，她右手握着一支白色的羽毛笔在书页上写字，左手按着书页，${LOOK_DOWN}${MAID_KEEP}`
+}
+EDITS['maid-reading2'] = {
+  refs: ['maid-hub-A-approved'],
+  prompt: `把<image1>里的女仆装角色改成这个姿势：她双手捧着膝上一本摊开的书，专注地阅读，${LOOK_DOWN}${MAID_KEEP}`
+}
+
 EDITS['outfit-lively2'] = {
   refs: ['hub-A-approved'],
   prompt:
