@@ -21,6 +21,7 @@ loop 首尾提速：生成模型在首尾帧约束附近会明显减速（接近
 
 import os
 import argparse
+import re
 import json
 import sys
 import time
@@ -93,9 +94,33 @@ def decode_rgba(path: Path) -> list[Image.Image]:
     return frames
 
 
-def export(webm: Path, fps: float, width: int = DEFAULT_WIDTH, speedup_edges: bool = False) -> Path:
+SPECK_MAX = 2500  # 像素（774 宽的原始帧上）：比这小、又不和人物相连的块算杂点
+
+
+def despeckle(frame: Image.Image) -> Image.Image:
+    """擦掉和人物不相连的小块（模型自己加的飘落花瓣之类）。人物本身是最大的连通块，和它相连的都保留。"""
+    from scipy import ndimage
+
+    a = np.asarray(frame)
+    solid = a[..., 3] > 16
+    lab, n = ndimage.label(solid)
+    if n < 2:
+        return frame
+    sizes = ndimage.sum(solid, lab, range(1, n + 1))
+    main = int(np.argmax(sizes)) + 1
+    drop = [i + 1 for i, size in enumerate(sizes) if i + 1 != main and size < SPECK_MAX]
+    if not drop:
+        return frame
+    out = a.copy()
+    out[np.isin(lab, drop)] = 0
+    return Image.fromarray(out, "RGBA")
+
+
+def export(webm: Path, fps: float, width: int = DEFAULT_WIDTH, speedup_edges: bool = False, clean: bool = False) -> Path:
     target = webm.with_suffix(".avif")
     frames = decode_rgba(webm)
+    if clean:
+        frames = [despeckle(f) for f in frames]
     if speedup_edges:
         positions = retime(frames)
         print(f"  首尾提速：{len(frames)} → {len(positions)} 帧")
@@ -147,6 +172,8 @@ def main() -> None:
     ap.add_argument("--width", type=int, default=DEFAULT_WIDTH, help=f"输出宽度，默认 {DEFAULT_WIDTH}")
     ap.add_argument("--mask", action="store_true", help="只重新生成 hitmask.png")
     ap.add_argument("--retime", action="store_true", help="loop 做首尾提速（旧的 K0→K0 loop 用）")
+    ap.add_argument("--only", help="只处理 id 匹配这个正则的片段")
+    ap.add_argument("--despeckle", action="store_true", help="擦掉和人物不相连的小块（飘落的花瓣等）；配合 --only 用，别用在带魔法光点的动作上")
     args = ap.parse_args()
 
     manifest = json.loads((ASSETS / "manifest.json").read_text(encoding="utf-8"))
@@ -155,6 +182,8 @@ def main() -> None:
         return
     total = 0
     for clip in manifest["clips"]:
+        if args.only and not re.search(args.only, clip["id"]):
+            continue
         target = ASSETS / clip["file"]
         webm = target.with_suffix(".webm")
         if not webm.exists():
@@ -163,7 +192,7 @@ def main() -> None:
         if not args.all and target.exists() and target.stat().st_mtime >= webm.stat().st_mtime:
             continue
         started = time.time()
-        export(webm, manifest["fps"], args.width, clip["type"] == "loop" and args.retime)
+        export(webm, manifest["fps"], args.width, clip["type"] == "loop" and args.retime, args.despeckle)
         size = target.stat().st_size
         total += size
         print(f"{target.relative_to(ASSETS)}  {size // 1024} KB  {time.time() - started:.1f}s")
