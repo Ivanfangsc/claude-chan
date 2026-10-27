@@ -11,6 +11,9 @@ resources/assets/hitmask.png
 resources/assets-chibi/keyframes/
 resources/assets-chibi/videos/
 resources/assets-chibi/hitmask.png
+resources/assets-maid/keyframes/
+resources/assets-maid/videos/
+resources/assets-maid/hitmask.png
 promo/
 # 从源码运行时的设置、窗口位置、日志
 /data/
