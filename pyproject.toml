@@ -1,6 +1,6 @@
 [project]
 name = "claude-chan"
-version = "1.1.0"
+version = "1.2.0"
 license = "MIT"
 description = "Claude-Chan：Claude Code 工作状态的桌面伙伴（Qt 版）"
 requires-python = ">=3.12"

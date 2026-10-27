@@ -127,7 +127,7 @@ confirmation > error > 工作中（writing / reading / thinking）> complete > i
 
 素材全部是 9:16 透明素材，由 `resources/assets/manifest.json` 描述，代码里不写死任何文件名。
 
-**形象**：每个形象是一套独立的素材目录，结构完全相同——原版 `resources/assets/`，Q 版（冷脸萌三头身）`resources/assets-chibi/`。设置窗口的“形象”里切换，选择保存在数据目录的 `app-state.json`。切换时先回到 idle，这一轮播完后播变身动画（manifest 的 `switch` 字段登记，首帧是本形象的 idle、末帧是目标形象的 idle），变身一开始就换成新形象的动画引擎，播完无缝接上；切换期间照常接收事件，切完显示最新的状态。Q 版的 error 是专属的“抱头蹲防”。
+**形象**：每个形象是一套独立的素材目录，结构完全相同——原版 `resources/assets/`，Q 版（冷脸萌三头身）`resources/assets-chibi/`，女仆 `resources/assets-maid/`（关键帧从原版 idle 换装编辑出来，其余视频按原版的任务列表生成，manifest 用 `scripts/make_skin_manifest.py maid` 从原版的生成）。设置窗口的“形象”里切换，选择保存在数据目录的 `app-state.json`。切换时先回到 idle，这一轮播完后播变身动画（manifest 的 `switch` 字段登记，首帧是本形象的 idle、末帧是目标形象的 idle），变身一开始就换成新形象的动画引擎，播完无缝接上；切换期间照常接收事件，切完显示最新的状态。Q 版的 error 是专属的“抱头蹲防”。
 
 - 关键帧 PNG（1026×1824）：每个状态和两个枢纽各一张。它们用于启动时的占位画面，以及计算点击穿透的命中区域。
 - 透明动画 AVIF（540×960，24fps），manifest 里登记的就是它们；同名的 VP9 + Alpha WebM（774×1376）是生成时的原始文件，用 `scripts/export_frames.py` 转换：
