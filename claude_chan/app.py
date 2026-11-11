@@ -75,6 +75,11 @@ class QtScheduler:
 SKINS = {"adult": ("原版", "assets"), "chibi": ("Q 版", "assets-chibi"), "maid": ("女仆", "assets-maid")}
 
 
+# 半身时每个形象画到哪里（占整帧高度）：头到膝上的书；没写的形象用 HALF_CROP_DEFAULT
+HALF_CROP = {"adult": 0.56, "chibi": 0.60, "maid": 0.56}
+HALF_CROP_DEFAULT = 0.58
+
+
 def resource_root() -> Path:
     """仓库根目录；打包后是解压目录。"""
     if getattr(sys, "frozen", False):
@@ -116,6 +121,7 @@ class PetApp:
             self.player,
             self._placeholder(self.assets, self.manifest),
             self._grid(self.skin),
+            HALF_CROP.get(self.skin, HALF_CROP_DEFAULT),
             self.config["window"]["widthFraction"],
             on_state_change=self._refresh_menus,
             on_menu=lambda pos: self.tray.popup(pos),
@@ -239,6 +245,7 @@ class PetApp:
                     skin=(lambda: self.skin, self.switch_skin),
                     always_on_top=(lambda: w.state["alwaysOnTop"], w.set_always_on_top),
                     click_through=(lambda: w.state["clickThrough"], w.set_click_through),
+                    half=(lambda: bool(w.state.get("half")), w.set_half),
                     follow=(lambda: self.follower.enabled, self.follower.set_enabled) if self.follower.available else None,
                     hide_in_fullscreen=(lambda: self.config["window"].get("hideInFullscreen", True), self._set_hide_in_fullscreen),
                     switch_style=(lambda: self.switch_style, self.set_switch_style),
@@ -368,7 +375,7 @@ class PetApp:
         self.skin = name
         self._save_app_state()
         self.player.set_assets(self.assets)
-        self.window.set_skin(self._placeholder(self.assets, self.manifest), self._grid(name))
+        self.window.set_skin(self._placeholder(self.assets, self.manifest), self._grid(name), HALF_CROP.get(name, HALF_CROP_DEFAULT))
         self.engine = self._make_engine()  # 接管播放器的回调
         idle = next((c for c in self.manifest.clips if c.type == "loop" and c.state == "idle"), None)
         if idle:

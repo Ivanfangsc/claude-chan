@@ -13,7 +13,7 @@ from typing import Callable
 from PySide6.QtCore import QTimer
 
 from . import follow
-from .window import ASPECT, MIN_WIDTH, PetWindow
+from .window import MIN_WIDTH, PetWindow
 
 DEFAULT_GAP_X, DEFAULT_GAP_Y = 12, 140  # 逻辑像素：贴右边，底下留出输入框的高度
 DEFAULT_HEIGHT_FRACTION = 0.4  # 第一次跟随时，桌宠高度占宿主窗口高度的比例
@@ -91,7 +91,7 @@ class Follower:
             f = follow.frame(host)
             if f:
                 dpr = self.window.devicePixelRatioF() or 1
-                st["width"] = max(MIN_WIDTH, round((f[3] - f[1]) / dpr * DEFAULT_HEIGHT_FRACTION / ASPECT))
+                st["width"] = max(MIN_WIDTH, round((f[3] - f[1]) / dpr * DEFAULT_HEIGHT_FRACTION / self.window.aspect()))
         self._resize_to(st["width"])
         self.log("找到 Claude 窗口，贴上去了")
 
@@ -132,7 +132,7 @@ class Follower:
         width = max(MIN_WIDTH, int(width))
         self._moving = True
         try:
-            self.window.resize(width, round(width * ASPECT))
+            self.window.resize(width, round(width * self.window.aspect()))
         finally:
             self._moving = False
 

@@ -36,7 +36,7 @@ def window(app, tmp_path, monkeypatch):
     monkeypatch.setattr("claude_chan.window.data_dir", lambda: tmp_path)
     # 只有下半部分是“角色”，头顶那块是透明区域
     grid = [[y > GRID_H // 2 for _ in range(GRID_W)] for y in range(GRID_H)]
-    w = PetWindow(StubPlayer(), None, grid, 0.25, lambda: None, lambda _p: None, lambda: None)
+    w = PetWindow(StubPlayer(), None, grid, 0.6, 0.25, lambda: None, lambda _p: None, lambda: None)
     w.resize(450, 800)
     w.show()  # 窗口显示时才会触发 resizeEvent、算出窗口形状（离屏模式，不会真的弹出）
     QApplication.processEvents()
@@ -49,6 +49,21 @@ def test_mask_follows_character(window) -> None:
     mask = window.mask()
     assert mask.contains(window.rect().center() + window.rect().center() * 0.5)  # 下半部分
     assert not mask.contains(window.rect().topLeft() + window.rect().center() * 0.2)  # 头顶透明区域
+
+
+def test_half_keeps_width_and_bottom(window) -> None:
+    g = window.geometry()
+    window.set_half(True)
+    h = window.geometry()
+    assert h.width() == g.width() and h.bottom() == g.bottom()  # 宽度不变、底边不动
+    assert h.height() == round(g.width() * 16 / 9 * 0.6)  # 只剩整帧上面 60%
+    assert window.head_fraction() > 0.1  # 头顶在窗口里更靠下，气泡跟着往下
+    # 点击区域按整帧换算：角色在整帧下半部分，半身窗口里只剩 0.5～0.6 那一截，在窗口靠下的位置
+    QApplication.processEvents()
+    assert window.mask().contains(window.rect().center() + window.rect().center() * 0.8)
+    assert not window.mask().contains(window.rect().center())
+    window.set_half(False)
+    assert window.geometry().height() == g.height() and window.geometry().bottom() == g.bottom()
 
 
 def test_player_pauses_while_hidden(window) -> None:

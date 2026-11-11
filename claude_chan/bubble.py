@@ -200,7 +200,8 @@ class Bubble(QWidget):
         w, h = self._layout["width"], self._layout["height"]
         g = self._owner.frameGeometry()
         screen = (self._owner.screen() or QGuiApplication.primaryScreen()).availableGeometry()
-        head_y = g.top() + round(g.height() * 0.1)  # 她头顶大约在窗口上方 10% 处
+        head = self._owner.head_fraction() if hasattr(self._owner, "head_fraction") else 0.1
+        head_y = g.top() + round(g.height() * head)  # 她头顶的位置：全身时约在窗口上方 10% 处，半身时更靠下
         x = g.center().x() - w // 2
         y = head_y - h - tail
         self._tail = "down"

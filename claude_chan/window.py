@@ -14,7 +14,7 @@ from typing import Callable
 
 from PIL import Image
 from PySide6.QtCore import QPoint, QRect, QRectF, Qt, QTimer
-from PySide6.QtGui import QGuiApplication, QImage, QPainter, QRegion
+from PySide6.QtGui import QColor, QGuiApplication, QImage, QLinearGradient, QPainter, QRegion
 from PySide6.QtWidgets import QWidget
 
 from .config import data_dir
@@ -23,6 +23,7 @@ from .profile import measure, note
 from .model import DisplayTarget
 
 ASPECT = 16 / 9
+HALF_FADE = 0.14  # 半身时下沿渐隐的高度（占窗口高度）
 MIN_WIDTH = 120
 MIN_VISIBLE = 80  # 窗口至少要有这么多像素露在某个屏幕里，否则认为保存的位置已失效
 GRID_W, GRID_H = 64, 114
@@ -60,14 +61,14 @@ def build_hit_grid(keyframes: list[Path], log: Callable[[str], None]) -> list[li
     return grid
 
 
-def default_geometry(width_fraction: float) -> QRect:
-    """默认宽度为主屏宽度的 width_fraction，按 9:16；太高时按工作区高度缩放。贴右下角。"""
+def default_geometry(width_fraction: float, aspect: float = ASPECT) -> QRect:
+    """默认宽度为主屏宽度的 width_fraction，按 aspect（高 / 宽）；太高时按工作区高度缩放。贴右下角。"""
     area = QGuiApplication.primaryScreen().availableGeometry()
     width = round(area.width() * width_fraction)
-    height = round(width * ASPECT)
+    height = round(width * aspect)
     if height > area.height():
         height = area.height()
-        width = round(height / ASPECT)
+        width = round(height / aspect)
     return QRect(area.right() - width + 1, area.bottom() - height + 1, width, height)
 
 
@@ -85,6 +86,7 @@ class PetWindow(QWidget):
         player: FramePlayer,
         placeholder: QImage | None,
         hit_grid: list[list[bool]] | None,
+        half_crop: float,
         width_fraction: float,
         on_state_change: Callable[[], None],
         on_menu: Callable[[QPoint], None],
@@ -95,6 +97,7 @@ class PetWindow(QWidget):
         self._placeholder = placeholder
         self._hit_grid = hit_grid
         self._hit_test = True
+        self._half_crop = half_crop
         self._width_fraction = width_fraction
         self._on_state_change = on_state_change
         self._on_menu = on_menu
@@ -103,7 +106,8 @@ class PetWindow(QWidget):
         self._target: DisplayTarget | None = None
         self._char_region = QRegion()
         self._state_file = data_dir() / "window-state.json"
-        self.state = {"bounds": None, "alwaysOnTop": True, "clickThrough": False}
+        # half：半身，只画每帧上面 half_crop 那一截（头到膝上），窗口跟着变矮，同样大小下占地更少
+        self.state = {"bounds": None, "alwaysOnTop": True, "clickThrough": False, "half": False}
         self._load_state()
         # 跟随模式（见 follower.py）：贴哪一侧、离边多远（物理像素，None 用默认）、跟随时的宽度
         self.state["follow"] = {"enabled": False, "anchor": "right", "gapX": None, "gapY": None, "width": None,
@@ -118,7 +122,7 @@ class PetWindow(QWidget):
         self.apply_flags()
         b = self.state["bounds"]
         rect = QRect(b["x"], b["y"], b["width"], b["height"]) if b else None
-        self.setGeometry(rect if rect and visible_somewhere(rect) else default_geometry(width_fraction))
+        self.setGeometry(rect if rect and visible_somewhere(rect) else default_geometry(width_fraction, self.aspect()))
 
         self._save_timer = QTimer(self, singleShot=True, interval=500)
         self._save_timer.timeout.connect(self._save_state)
@@ -194,19 +198,53 @@ class PetWindow(QWidget):
         self._hit_test = on
         self._apply_mask()
 
-    def set_skin(self, placeholder: QImage | None, hit_grid: list[list[bool]] | None) -> None:
-        """切换形象：换占位图和点击区域。"""
+    def set_skin(self, placeholder: QImage | None, hit_grid: list[list[bool]] | None, half_crop: float) -> None:
+        """切换形象：换占位图、点击区域；半身时按新形象的裁剪线调整高度。"""
         if placeholder is not None:
             self._placeholder = placeholder
         self._hit_grid = hit_grid
+        old = self.crop()
+        self._half_crop = half_crop
+        if self.crop() != old:
+            self._fit_height()
         self._update_mask()
+
+    # ---------- 半身 ----------
+
+    def crop(self) -> float:
+        """每帧从上往下画多少（1 = 全身）。"""
+        return self._half_crop if self.state.get("half") else 1.0
+
+    def aspect(self) -> float:
+        """窗口的高 / 宽。"""
+        return ASPECT * self.crop()
+
+    def head_fraction(self) -> float:
+        """她头顶在窗口里的高度比例（气泡摆在这上面）：全身时约 10%。"""
+        return 0.1 / self.crop()
+
+    def set_half(self, on: bool) -> None:
+        if on == bool(self.state.get("half")):
+            return
+        self.state["half"] = on
+        self._fit_height()
+        self._update_mask()
+        self.update()
+        self.persist(immediate=True)
+        self._on_state_change()
+
+    def _fit_height(self) -> None:
+        """宽度不变、底边不动，按当前比例改高度。"""
+        g = self.geometry()
+        height = round(g.width() * self.aspect())
+        self.setGeometry(g.x(), g.y() + g.height() - height, g.width(), height)
 
     def reset_geometry(self) -> None:
         if self.following and self.on_follow_reset:
             self.on_follow_reset()
             self.persist(immediate=True)
             return
-        self.setGeometry(default_geometry(self._width_fraction))
+        self.setGeometry(default_geometry(self._width_fraction, self.aspect()))
         self.persist(immediate=True)
 
     def toggle_visible(self) -> None:
@@ -239,10 +277,12 @@ class PetWindow(QWidget):
         region = QRegion()
         if self._hit_grid is None:
             return region
-        # 画面按 contain 方式铺满窗口；窗口本身就是 9:16，所以直接按比例换算
+        # 窗口宽度对应整帧宽度；高度对应整帧上面 crop 那一截（全身时就是整帧），按比例换算
         w, h = self.width(), self.height()
-        for y, row in enumerate(self._hit_grid):
-            top, bottom = y * h // GRID_H, (y + 1) * h // GRID_H
+        rows = min(GRID_H, math.ceil(GRID_H * self.crop()))
+        full_h = h / self.crop()
+        for y, row in enumerate(self._hit_grid[:rows]):
+            top, bottom = round(y * full_h / GRID_H), min(h, round((y + 1) * full_h / GRID_H))
             x = 0
             while x < GRID_W:
                 if not row[x]:
@@ -281,15 +321,15 @@ class PetWindow(QWidget):
         self._on_menu(event.globalPos())
 
     def wheelEvent(self, event) -> None:  # noqa: N802
-        """Ctrl + 滚轮缩放，保持 9:16，以底边中点为锚点（角色坐着，脚下不动）。"""
+        """Ctrl + 滚轮缩放，保持比例，以底边中点为锚点（角色坐着，脚下不动）。"""
         if not event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             return
         g = self.geometry()
         area = (self.screen() or QGuiApplication.primaryScreen()).availableGeometry()
-        max_width = int(min(area.width(), area.height() / ASPECT))
+        max_width = int(min(area.width(), area.height() / self.aspect()))
         factor = 1.08 if event.angleDelta().y() > 0 else 1 / 1.08
         width = round(min(max_width, max(MIN_WIDTH, g.width() * factor)))
-        height = round(width * ASPECT)
+        height = round(width * self.aspect())
         cx, bottom = g.x() + g.width() / 2, g.y() + g.height()
         self.setGeometry(round(cx - width / 2), bottom - height, width, height)
         self.persist()
@@ -325,25 +365,40 @@ class PetWindow(QWidget):
         p.fillRect(self.rect(), Qt.GlobalColor.transparent)
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         target = QRectF(self.rect())
+        crop = self.crop()
         current, fading, progress = self._player.frames()
+
+        def draw(img: QImage) -> None:
+            # 半身：只取每帧上面 crop 那一截
+            p.drawImage(target, img, QRectF(0, 0, img.width(), img.height() * crop))
+
         p.save()
         if self._sway_degrees:
-            # 两条周期不成整数比的正弦叠加：一直在摇，但摆幅和节奏每次都不太一样
+            # 两条周期不成整数比的正弦叠加：一直在摇，但摆幅和节奏每次都不太一样；绕整帧的底边转（半身时在窗口下方）
             t = time.monotonic() * 1000 / self._sway_period * 2 * math.pi
             angle = self._sway_degrees * (0.75 * math.sin(t) + 0.25 * math.sin(t / 1.618 + 1.3))
-            p.translate(self.width() / 2, self.height() * 0.98)
+            pivot = self.height() / crop * 0.98
+            p.translate(self.width() / 2, pivot)
             p.rotate(angle)
-            p.translate(-self.width() / 2, -self.height() * 0.98)
+            p.translate(-self.width() / 2, -pivot)
         if current is None:
             if self._placeholder is not None:
-                p.drawImage(target, self._placeholder)
+                draw(self._placeholder)
         elif fading is not None:
             p.setOpacity(1 - progress)
-            p.drawImage(target, fading)
+            draw(fading)
             p.setOpacity(progress)
-            p.drawImage(target, current)
+            draw(current)
             p.setOpacity(1)
         else:
-            p.drawImage(target, current)
+            draw(current)
         p.restore()
+        if crop < 1:
+            # 半身的下沿渐隐，不是一刀切
+            top = self.height() * (1 - HALF_FADE)
+            fade = QLinearGradient(0, top, 0, self.height())
+            fade.setColorAt(0, QColor(0, 0, 0, 255))
+            fade.setColorAt(1, QColor(0, 0, 0, 0))
+            p.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+            p.fillRect(QRectF(0, top, self.width(), self.height() - top), fade)
         p.end()

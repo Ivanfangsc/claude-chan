@@ -33,6 +33,7 @@ class SettingsBackend:
     skin: tuple[Callable[[], str], Callable[[str], None]]
     always_on_top: Toggle
     click_through: Toggle
+    half: Toggle
     follow: Toggle | None  # 只有 Windows 有
     hide_in_fullscreen: Toggle
     switch_style: tuple[Callable[[], str], Callable[[str], None]]
@@ -81,6 +82,8 @@ class SettingsDialog(QDialog):
         # ---------- 窗口 ----------
         box = QGroupBox("窗口")
         lay = QVBoxLayout(box)
+        self._half = self._check(lay, "半身", backend.half)
+        lay.addWidget(_hint("只显示到膝上，下沿渐隐：同样大小下占地更少，适合贴在屏幕底边。"))
         self._top = self._check(lay, "置顶", backend.always_on_top)
         self._through = self._check(lay, "鼠标穿透", backend.click_through)
         lay.addWidget(_hint("开启后点不到她，也拖不动；要关掉请从托盘图标的菜单打开设置。"))
@@ -158,6 +161,7 @@ class SettingsDialog(QDialog):
         """按当前状态更新勾选（不触发设置）。"""
         b = self._b
         pairs: list[tuple[QWidget, bool]] = [
+            (self._half, b.half[0]()),
             (self._top, b.always_on_top[0]()),
             (self._through, b.click_through[0]()),
             (self._fullscreen, b.hide_in_fullscreen[0]()),
