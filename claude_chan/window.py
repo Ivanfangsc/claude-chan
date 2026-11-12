@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import math
 import time
 from pathlib import Path
@@ -17,6 +18,7 @@ from PySide6.QtCore import QPoint, QRect, QRectF, Qt, QTimer
 from PySide6.QtGui import QColor, QGuiApplication, QImage, QLinearGradient, QPainter, QRegion
 from PySide6.QtWidgets import QWidget
 
+from . import follow
 from .config import data_dir
 from .engine.player import FramePlayer
 from .profile import measure, note
@@ -333,6 +335,16 @@ class PetWindow(QWidget):
         cx, bottom = g.x() + g.width() / 2, g.y() + g.height()
         self.setGeometry(round(cx - width / 2), bottom - height, width, height)
         self.persist()
+
+    def nativeEvent(self, event_type, message):  # noqa: N802
+        # 置顶时也排在任务栏下面：重叠时任务栏盖住她，不是她盖住任务栏
+        if (sys.platform == "win32" and event_type == b"windows_generic_MSG"
+                and self.state["alwaysOnTop"] and not self.following):
+            from ctypes import wintypes
+            msg = wintypes.MSG.from_address(int(message))
+            if msg.message == 0x0046:  # WM_WINDOWPOSCHANGING
+                follow.stay_below_taskbar(msg.lParam)
+        return super().nativeEvent(event_type, message)
 
     def showEvent(self, event) -> None:  # noqa: N802
         self._player.set_paused(False)

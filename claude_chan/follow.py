@@ -130,6 +130,27 @@ if sys.platform == "win32":
         _user32.SetWindowLongPtrW(pet, GWLP_HWNDPARENT, owner)
         return _user32.GetWindowLongPtrW(pet, GWLP_HWNDPARENT) == owner
 
+    class _WindowPos(ctypes.Structure):
+        _fields_ = [("hwnd", wintypes.HWND), ("hwndInsertAfter", wintypes.HWND), ("x", ctypes.c_int),
+                    ("y", ctypes.c_int), ("cx", ctypes.c_int), ("cy", ctypes.c_int), ("flags", wintypes.UINT)]
+
+    _user32.FindWindowW.restype = wintypes.HWND
+    _user32.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
+
+    def stay_below_taskbar(lparam: int) -> None:
+        """处理 WM_WINDOWPOSCHANGING：置顶窗口每次改层级，都改成紧挨着排在任务栏下面（仍高于普通窗口）。
+
+        点击激活时系统会先升到 HWND_TOP，再排到某个具体窗口后面（那个窗口可能在任务栏上面），所以一律改。
+        """
+        pos = _WindowPos.from_address(lparam)
+        if pos.flags & 0x0004:  # SWP_NOZORDER：不改层级
+            return
+        if (pos.hwndInsertAfter or 0) in (1, 0xFFFFFFFFFFFFFFFE, -2):  # HWND_BOTTOM / HWND_NOTOPMOST：照常
+            return
+        taskbar = _user32.FindWindowW("Shell_TrayWnd", None)
+        if taskbar and taskbar != pos.hwnd:
+            pos.hwndInsertAfter = taskbar
+
     def move(pet: int, x: int, y: int) -> None:
         # 只改位置：不改大小、不改层级、不激活
         _user32.SetWindowPos(wintypes.HWND(pet), None, x, y, 0, 0, 0x0001 | 0x0004 | 0x0010)
