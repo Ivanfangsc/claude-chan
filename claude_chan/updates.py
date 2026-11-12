@@ -49,6 +49,7 @@ class UpdateChecker(QObject):
         self._timer.timeout.connect(self.check)
         self._finished.connect(self._done)
         self.latest: tuple[str, str] | None = None
+        self.release: dict = {}  # 最新 Release 的原始数据（一键更新从里面找安装包）
 
     def start(self) -> None:
         QTimer.singleShot(10_000, self.check)
@@ -85,4 +86,5 @@ class UpdateChecker(QObject):
             if self.latest is None or self.latest[0] != tag:
                 self._log(f"有新版本：{tag}（当前 v{self._current}）")
             self.latest = (tag, url)
+            self.release = data
             self.available.emit(tag, url)

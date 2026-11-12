@@ -38,6 +38,7 @@ from . import jump
 from .bubble import Bubble, content_of
 from .state.transcript import session_title
 from .tray import PetTray
+from .updater import Updater, find_asset, finish_previous, install_dir
 from .updates import UpdateChecker
 from .window import PetWindow, build_hit_grid
 
@@ -144,11 +145,25 @@ class PetApp:
             quit_app=self.quit,
             open_debug=self.open_debug if self.debug_enabled else None,
             version=__version__,
+            install_update=self._install_update,
         )
 
         updates = self.config.get("updates", {})
         self.updates = UpdateChecker(updates.get("repo", "Ivanfangsc/claude-chan"), __version__, self.log)
-        self.updates.available.connect(self.tray.show_update)
+        self.updates.available.connect(self._update_available)
+        self.updater = Updater(data_dir(), self.log)
+        self.updater.progress.connect(lambda pct: self.tray.show_update_progress(f"正在下载新版本… {pct}%"))
+        self.updater.ready.connect(self._update_ready)
+        self.updater.failed.connect(self._update_failed)
+        self._update_asset = None
+        previous = finish_previous(data_dir())
+        if previous:
+            ok, detail = previous
+            self.log(f"上次更新：{'成功' if ok else '失败'} {detail}")
+            if ok:
+                self.tray.notify("Claude-Chan 已更新", f"现在是 v{__version__}。")
+            else:
+                self.tray.notify("Claude-Chan 更新失败", "已恢复原来的版本。可以右键托盘图标再试一次，或者手动下载。")
         if updates.get("check", True):
             self.updates.start()
 
@@ -524,6 +539,31 @@ class PetApp:
         self.window.set_hit_test(config["window"]["hitTest"])
         self.log(f"已重新加载配置：{config_path()}{'（server 的修改需要重启桌宠才生效）' if server_changed else ''}")
         self._refresh_menus()
+
+    # ---------- 一键更新 ----------
+
+    def _update_available(self, tag: str, url: str) -> None:
+        # 只有打包版、而且 Release 里有安装包时才能一键更新；否则还是打开下载页
+        self._update_asset = find_asset(self.updates.release) if install_dir() else None
+        if not self.updater.busy:
+            self.tray.show_update(tag, url, self._update_asset is not None)
+
+    def _install_update(self) -> None:
+        if self._update_asset is None or self.updater.busy:
+            return
+        self.tray.show_update_progress("正在下载新版本… 0%")
+        self.updater.start(self._update_asset)
+
+    def _update_ready(self) -> None:
+        self.tray.show_update_progress("正在重启更新…")
+        if self.updater.apply():
+            self.quit()
+
+    def _update_failed(self, error: str) -> None:
+        self.log(f"更新失败：{error}")
+        self.tray.notify("Claude-Chan 更新失败", f"{error}。可以再点一次重试。")
+        if self.updates.latest:
+            self.tray.show_update(*self.updates.latest, self._update_asset is not None)
 
     def quit(self) -> None:
         self.log("退出")
