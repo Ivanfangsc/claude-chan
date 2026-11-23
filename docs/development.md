@@ -4,7 +4,7 @@
 
 ```
 Claude Code（WSL / PowerShell / Desktop）
-   │  插件：type "http" hook，POST 每个事件
+   │  插件：http hook（PreToolUse / PermissionRequest 用 curl），POST 每个事件
    ▼
 127.0.0.1:47800/event ──► 桌宠主进程：按会话记录状态 → 按优先级汇总 → 目标状态
                                                               │
@@ -52,7 +52,7 @@ uv run claude-chan            # 加 --debug 同时打开调试面板
 
 ## 插件的工作方式
 
-插件只做一件事：通过 `type: "http"` 的 hook，把 Claude Code 的事件 POST 到 `http://127.0.0.1:47800/event`。三个入口（WSL 的 CLI、Windows 的 CLI、Claude Desktop）的配置完全一样，不依赖任何 shell 环境。
+插件只做一件事：把 Claude Code 的事件 POST 到 `http://127.0.0.1:47800/event`。大多数事件用 `type: "http"` 的 hook；PreToolUse 和 PermissionRequest 用 `type: "command"` 的 hook 调 `curl`（原因见[下文](#桌宠没开时会怎样)），所以 WSL 里要有 `curl`（Windows 10 以上和 Git Bash 自带）。三个入口（WSL 的 CLI、Windows 的 CLI、Claude Desktop）的配置完全一样。
 
 这个仓库本身就是一个 marketplace（`.claude-plugin/marketplace.json`），插件在 `plugin/` 目录下。开发时可以把本地的仓库目录当 marketplace 添加：本地目录形式会原地加载插件，修改 `plugin/` 下的文件不需要重新安装。
 
@@ -72,7 +72,8 @@ claude plugin install claude-chan@claude-chan
 HTTP hook 会阻塞等待响应，而且不支持后台异步（`async` 只对 command hook 有效）。在 Windows 上连接一个没人监听的端口约 2 秒后才被拒绝，WSL 的 mirrored 网络里则是直接丢包，所以 hook 的超时设得很短：
 
 - `timeout` 是 **0.2 秒**。桌宠开着时响应只需几毫秒，没有影响。
-- 桌宠没开时，每个 hook 最多等 0.2 秒；一次工具调用有 PreToolUse 和 PostToolUse 两个 hook，也就是多等约 0.4 秒。失败只记在 Claude Code 的调试日志里，界面上不显示错误。
+- 桌宠没开时，每个 hook 最多等 0.2 秒；一次工具调用有 PreToolUse 和 PostToolUse 两个 hook，也就是多等约 0.4 秒。
+- 新版 Claude Code 对 PreToolUse、PermissionRequest 这种会“检查操作”的事件，HTTP hook 连不上时会在界面上提示“hook 没给出可用答复，没有检查这次操作”。所以这两个事件改用 command hook：`curl --max-time 0.2 … || true`，桌宠没开时以 0 退出、不输出任何东西，就不会有提示。代价是每次要起一个 curl 进程，桌宠开着时 PreToolUse 也要多花约 0.08 秒。其他事件连不上时只记在调试日志里，界面上不显示。
 
 ### 与原始需求说明不一致、以官方文档为准的地方
 

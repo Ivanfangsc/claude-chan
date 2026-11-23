@@ -1,5 +1,5 @@
 {
-  "description": "把 Claude Code 的事件推送给 Claude-Chan 桌宠。所有事件都发送，由桌宠决定如何映射。HTTP hook 会阻塞等待响应：桌宠开着时响应只需几毫秒；桌宠没开时每个 hook 最多等 0.2 秒。SessionStart 不支持 HTTP hook，会话由它的第一个事件自动创建。",
+  "description": "把 Claude Code 的事件推送给 Claude-Chan 桌宠。所有事件都发送，由桌宠决定如何映射。大多数事件用 HTTP hook（桌宠开着时几毫秒，没开时最多等 0.2 秒）；PreToolUse 和 PermissionRequest 这两个会“检查操作”的事件改用 curl 的 command hook，桌宠没开时安静地以 0 退出，Claude Code 不再提示“hook 没给出可用答复”。SessionStart 不支持 HTTP hook，会话由它的第一个事件自动创建。",
   "hooks": {
     "SessionEnd": [
       {
@@ -27,9 +27,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:47800/event",
-            "timeout": 0.2
+            "type": "command",
+            "command": "curl -s -o /dev/null --max-time 0.2 -H \"Content-Type: application/json\" --data-binary @- http://127.0.0.1:47800/event || true",
+            "timeout": 2
           }
         ]
       }
@@ -60,9 +60,9 @@
       {
         "hooks": [
           {
-            "type": "http",
-            "url": "http://127.0.0.1:47800/event",
-            "timeout": 0.2
+            "type": "command",
+            "command": "curl -s -o /dev/null --max-time 0.2 -H \"Content-Type: application/json\" --data-binary @- http://127.0.0.1:47800/event || true",
+            "timeout": 2
           }
         ]
       }
