@@ -260,6 +260,7 @@ class PetApp:
                     skin=(lambda: self.skin, self.switch_skin),
                     always_on_top=(lambda: w.state["alwaysOnTop"], w.set_always_on_top),
                     click_through=(lambda: w.state["clickThrough"], w.set_click_through),
+                    hover_fade=(lambda: bool(w.state.get("hoverFade")), w.set_hover_fade),
                     half=(lambda: bool(w.state.get("half")), w.set_half),
                     follow=(lambda: self.follower.enabled, self.follower.set_enabled) if self.follower.available else None,
                     hide_in_fullscreen=(lambda: self.config["window"].get("hideInFullscreen", True), self._set_hide_in_fullscreen),

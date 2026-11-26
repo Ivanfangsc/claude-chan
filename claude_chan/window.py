@@ -1,4 +1,4 @@
-"""桌宠窗口：透明、无边框、不在任务栏；拖动、Ctrl + 滚轮缩放、置顶、鼠标穿透，并记住这些状态。
+"""桌宠窗口：透明、无边框、不在任务栏；拖动、Ctrl + 滚轮缩放、置顶、鼠标穿透、悬停变透明，并记住这些状态。
 
 点击穿透：启动时把所有关键帧的不透明区域取并集，缩到粗网格并向外扩一格，作为窗口形状
 （setMask）。形状以外的区域点击会落到下面的窗口；三个平台行为一致，也没有逐帧开销。
@@ -15,7 +15,7 @@ from typing import Callable
 
 from PIL import Image
 from PySide6.QtCore import QPoint, QRect, QRectF, Qt, QTimer
-from PySide6.QtGui import QColor, QGuiApplication, QImage, QLinearGradient, QPainter, QRegion
+from PySide6.QtGui import QColor, QCursor, QGuiApplication, QImage, QLinearGradient, QPainter, QRegion
 from PySide6.QtWidgets import QWidget
 
 from . import follow
@@ -29,6 +29,11 @@ HALF_FADE = 0.14  # 半身时下沿渐隐的高度（占窗口高度）
 MIN_WIDTH = 120
 MIN_VISIBLE = 80  # 窗口至少要有这么多像素露在某个屏幕里，否则认为保存的位置已失效
 GRID_W, GRID_H = 64, 114
+# 悬停变透明：鼠标在她身上停这么久后变淡、点击落到下面的窗口；移开后恢复
+HOVER_DWELL_MS = 600
+HOVER_OPACITY = 0.25
+HOVER_FADE_MS = 150
+HOVER_POLL_MS = 50
 
 
 def build_hit_grid(keyframes: list[Path], log: Callable[[str], None]) -> list[list[bool]] | None:
@@ -109,7 +114,7 @@ class PetWindow(QWidget):
         self._char_region = QRegion()
         self._state_file = data_dir() / "window-state.json"
         # half：半身，只画每帧上面 half_crop 那一截（头到膝上），窗口跟着变矮，同样大小下占地更少
-        self.state = {"bounds": None, "alwaysOnTop": True, "clickThrough": False, "half": False}
+        self.state = {"bounds": None, "alwaysOnTop": True, "clickThrough": False, "half": False, "hoverFade": False}
         self._load_state()
         # 跟随模式（见 follower.py）：贴哪一侧、离边多远（物理像素，None 用默认）、跟随时的宽度
         self.state["follow"] = {"enabled": False, "anchor": "right", "gapX": None, "gapY": None, "width": None,
@@ -117,6 +122,16 @@ class PetWindow(QWidget):
         self.on_moved: Callable[[], None] | None = None
         self.on_flags_applied: Callable[[], None] | None = None
         self.on_follow_reset: Callable[[], None] | None = None
+
+        # 悬停变透明：_faded 表示现在是否淡出且不接收鼠标；_opacity 是画的时候乘上的不透明度，向目标渐变
+        self._faded = False
+        self._opacity = 1.0
+        self._dwell_timer = QTimer(self, singleShot=True, interval=HOVER_DWELL_MS)
+        self._dwell_timer.timeout.connect(self._dwell_done)
+        self._poll_timer = QTimer(self, interval=HOVER_POLL_MS)
+        self._poll_timer.timeout.connect(self._poll_cursor)
+        self._fade_timer = QTimer(self, interval=16)
+        self._fade_timer.timeout.connect(self._step_fade)
 
         self.setWindowTitle("Claude-Chan")
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -130,6 +145,7 @@ class PetWindow(QWidget):
         self._save_timer.timeout.connect(self._save_state)
         self._sway_degrees, self._sway_period = 0.0, 5000.0
         player.frame_changed.connect(self.update)
+
 
     def set_sway(self, degrees: float, period_ms: float) -> None:
         self._sway_degrees, self._sway_period = degrees, max(500.0, period_ms)
@@ -178,6 +194,7 @@ class PetWindow(QWidget):
             flags |= Qt.WindowType.WindowStaysOnTopHint
         if self.state["clickThrough"]:
             flags |= Qt.WindowType.WindowTransparentForInput
+        self._unfade(animate=False)  # 重建窗口会丢掉临时的穿透，先回到正常状态
         visible = self.isVisible()
         self.setWindowFlags(flags)
         if visible:
@@ -195,6 +212,70 @@ class PetWindow(QWidget):
         self.state["clickThrough"] = on
         self.apply_flags()
         self.persist(immediate=True)
+
+    def set_hover_fade(self, on: bool) -> None:
+        self.state["hoverFade"] = on
+        if not on:
+            self._dwell_timer.stop()
+            self._unfade()
+        self.persist(immediate=True)
+
+    # ---------- 悬停变透明 ----------
+
+    def _cursor_on_character(self) -> bool:
+        local = self.mapFromGlobal(QCursor.pos())
+        region = self._char_region if self._hit_test and self._hit_grid is not None else QRegion(self.rect())
+        return region.contains(local)
+
+    def _dwell_done(self) -> None:
+        if (self.state.get("hoverFade") and not self.state["clickThrough"] and self.isVisible()
+                and not QGuiApplication.mouseButtons() and self._cursor_on_character()):
+            self._faded = True
+            self._set_input_transparent(True)
+            self._poll_timer.start()
+            self._fade_timer.start()
+
+    def _poll_cursor(self) -> None:
+        """淡出期间窗口收不到鼠标事件，只能轮询光标位置：离开她的轮廓就恢复。"""
+        if not self._cursor_on_character():
+            self._unfade()
+
+    def _unfade(self, animate: bool = True) -> None:
+        self._poll_timer.stop()
+        if self._faded:
+            self._faded = False
+            if not self.state["clickThrough"]:
+                self._set_input_transparent(False)
+        if animate:
+            self._fade_timer.start()
+        else:
+            self._fade_timer.stop()
+            self._opacity = 1.0
+            self.update()
+
+    def _set_input_transparent(self, on: bool) -> None:
+        # 只改原生窗口的标志，不重建窗口（setWindowFlags 会重建、闪一下）
+        handle = self.windowHandle()
+        if handle is not None:
+            handle.setFlag(Qt.WindowType.WindowTransparentForInput, on)
+            self.update()  # Windows 的分层窗口要重绘一次，系统才按新标志判断点击落在哪
+
+    def _step_fade(self) -> None:
+        target = HOVER_OPACITY if self._faded else 1.0
+        step = (1.0 - HOVER_OPACITY) * 16 / HOVER_FADE_MS
+        self._opacity = min(target, self._opacity + step) if self._opacity < target else max(target, self._opacity - step)
+        if self._opacity == target:
+            self._fade_timer.stop()
+        self.update()
+
+    def enterEvent(self, event) -> None:  # noqa: N802
+        if self.state.get("hoverFade") and not self.state["clickThrough"]:
+            self._dwell_timer.start()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:  # noqa: N802
+        self._dwell_timer.stop()
+        super().leaveEvent(event)
 
     def set_hit_test(self, on: bool) -> None:
         self._hit_test = on
@@ -306,6 +387,7 @@ class PetWindow(QWidget):
     # ---------- 鼠标 ----------
 
     def mousePressEvent(self, event) -> None:  # noqa: N802
+        self._dwell_timer.stop()  # 在操作她，不要变透明
         if event.button() == Qt.MouseButton.LeftButton and self.windowHandle():
             # 由系统原生处理拖动，跨不同 DPI 的屏幕也稳定
             self.windowHandle().startSystemMove()
@@ -326,6 +408,8 @@ class PetWindow(QWidget):
         """Ctrl + 滚轮缩放，保持比例，以底边中点为锚点（角色坐着，脚下不动）。"""
         if not event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             return
+        if self._dwell_timer.isActive():
+            self._dwell_timer.start()  # 正在缩放，重新计时
         g = self.geometry()
         area = (self.screen() or QGuiApplication.primaryScreen()).availableGeometry()
         max_width = int(min(area.width(), area.height() / self.aspect()))
@@ -351,6 +435,8 @@ class PetWindow(QWidget):
         super().showEvent(event)
 
     def hideEvent(self, event) -> None:  # noqa: N802
+        self._dwell_timer.stop()
+        self._unfade(animate=False)
         self._player.set_paused(True)
         super().hideEvent(event)
 
@@ -385,6 +471,7 @@ class PetWindow(QWidget):
             p.drawImage(target, img, QRectF(0, 0, img.width(), img.height() * crop))
 
         p.save()
+        p.setOpacity(self._opacity)
         if self._sway_degrees:
             # 两条周期不成整数比的正弦叠加：一直在摇，但摆幅和节奏每次都不太一样；绕整帧的底边转（半身时在窗口下方）
             t = time.monotonic() * 1000 / self._sway_period * 2 * math.pi
@@ -397,11 +484,11 @@ class PetWindow(QWidget):
             if self._placeholder is not None:
                 draw(self._placeholder)
         elif fading is not None:
-            p.setOpacity(1 - progress)
+            p.setOpacity(self._opacity * (1 - progress))
             draw(fading)
-            p.setOpacity(progress)
+            p.setOpacity(self._opacity * progress)
             draw(current)
-            p.setOpacity(1)
+            p.setOpacity(self._opacity)
         else:
             draw(current)
         p.restore()

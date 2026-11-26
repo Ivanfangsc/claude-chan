@@ -33,6 +33,7 @@ class SettingsBackend:
     skin: tuple[Callable[[], str], Callable[[str], None]]
     always_on_top: Toggle
     click_through: Toggle
+    hover_fade: Toggle
     half: Toggle
     follow: Toggle | None  # 只有 Windows 有
     hide_in_fullscreen: Toggle
@@ -85,6 +86,8 @@ class SettingsDialog(QDialog):
         self._half = self._check(lay, "半身", backend.half)
         lay.addWidget(_hint("只显示到膝上，下沿渐隐：同样大小下占地更少，适合贴在屏幕底边。"))
         self._top = self._check(lay, "置顶", backend.always_on_top)
+        self._hover = self._check(lay, "悬停时变透明", backend.hover_fade)
+        lay.addWidget(_hint("鼠标在她身上停一会儿，她就变淡，可以看到并点到后面的东西；移开后恢复。想拖她或右键，移上去后马上点。"))
         self._through = self._check(lay, "鼠标穿透", backend.click_through)
         lay.addWidget(_hint("开启后点不到她，也拖不动；要关掉请从托盘图标的菜单打开设置。"))
         self._follow = None
@@ -163,6 +166,7 @@ class SettingsDialog(QDialog):
         pairs: list[tuple[QWidget, bool]] = [
             (self._half, b.half[0]()),
             (self._top, b.always_on_top[0]()),
+            (self._hover, b.hover_fade[0]()),
             (self._through, b.click_through[0]()),
             (self._fullscreen, b.hide_in_fullscreen[0]()),
             (self._fidgets, b.fidgets[0]()),
