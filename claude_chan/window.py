@@ -132,6 +132,7 @@ class PetWindow(QWidget):
         self._poll_timer.timeout.connect(self._poll_cursor)
         self._fade_timer = QTimer(self, interval=16)
         self._fade_timer.timeout.connect(self._step_fade)
+        self.setMouseTracking(True)  # 不按键移动也收到 mouseMoveEvent（见 _arm_dwell）
 
         self.setWindowTitle("Claude-Chan")
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -268,10 +269,21 @@ class PetWindow(QWidget):
             self._fade_timer.stop()
         self.update()
 
-    def enterEvent(self, event) -> None:  # noqa: N802
-        if self.state.get("hoverFade") and not self.state["clickThrough"]:
+    def _arm_dwell(self) -> None:
+        if (self.state.get("hoverFade") and not self.state["clickThrough"] and not self._faded
+                and not self._dwell_timer.isActive()):
             self._dwell_timer.start()
+
+    # 不能只靠 enterEvent：淡出期间窗口收不到鼠标消息，Qt 以为鼠标一直在她身上，下次移上来就不再发 enter。
+    # 所以鼠标在她身上移动（开了 mouseTracking）也会开始计时。
+    def enterEvent(self, event) -> None:  # noqa: N802
+        self._arm_dwell()
         super().enterEvent(event)
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        if not event.buttons():
+            self._arm_dwell()
+        super().mouseMoveEvent(event)
 
     def leaveEvent(self, event) -> None:  # noqa: N802
         self._dwell_timer.stop()
